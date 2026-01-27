@@ -20,15 +20,19 @@ type Handler struct {
 	builder  *service.Builder
 	store    *storage.Storage
 	osClient *openstack.Client
+	flavorID string
+	netID    string
 }
 
 // New — конструктор
-func New(log *slog.Logger, b *service.Builder, s *storage.Storage, osc *openstack.Client) *Handler {
+func New(log *slog.Logger, b *service.Builder, s *storage.Storage, osc *openstack.Client, flavorID, netID string) *Handler {
 	return &Handler{
 		log:      log,
 		builder:  b,
 		store:    s,
 		osClient: osc,
+		flavorID: flavorID,
+		netID:    netID,
 	}
 }
 
@@ -106,16 +110,10 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 		h.log.Info("background: creating test vm...")
 
 		// --- КОНФИГУРАЦИЯ ТЕСТОВОЙ VM ---
-		flavorID := "2" // m1.small
-		
-		// Твоя Public сеть
-		netID := "47a414d9-6db9-4694-b976-d41b1c48a46e"
-		// --------------------------------
-
 		vmName := req.ImageName + "-test-agent"
 
 		// UserData пустой, ключ прокидывается автоматически через Client
-		vmID, err := h.osClient.CreateVM(vmName, glanceID, flavorID, netID, "")
+		vmID, err := h.osClient.CreateVM(vmName, glanceID, h.flavorID, h.netID, "")
 
 		if err != nil {
 			h.log.Error("background: vm create failed", slog.String("error", err.Error()))

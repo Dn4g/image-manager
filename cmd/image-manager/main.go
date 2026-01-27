@@ -90,7 +90,7 @@ func main() {
 
     // 6. Сборка всего вместе (Dependency Injection)
     // Создаем Handler и передаем ему все инструменты: логгер, билдер, базу, ос-клиент.
-    h := handler.New(log, builder, store, osClient)
+    h := handler.New(log, builder, store, osClient, cfg.OpenStack.FlavorID, cfg.OpenStack.NetworkID)
 
     // Регистрируем пути (/build -> h.StartBuild)
     h.RegisterRoutes(r)

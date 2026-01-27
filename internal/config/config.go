@@ -28,6 +28,8 @@ type Config struct {
    DomainName string `yaml:"domain_name" env:"OS_DOMAIN_NAME" env-default:"Default"`
    Region     string `yaml:"region" env:"OS_REGION_NAME" env-default:"RegionOne"`
    SSHKeyName string `yaml:"ssh_key_name" env:"OS_SSH_KEY_NAME" env-default:"master-key"`
+   FlavorID   string `yaml:"flavor_id" env:"OS_FLAVOR_ID" env-default:"2"`
+   NetworkID  string `yaml:"network_id" env:"OS_NETWORK_ID" env-required:"true"`
     }
 
 }
