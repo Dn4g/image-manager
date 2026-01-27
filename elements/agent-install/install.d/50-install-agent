@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+# Ищем, где лежит наш элемент
+ELEMENT_DIR=$(dirname $(dirname $0))
+
+
+
+echo "Installing Agent binary..."
+
+# Копируем бинарник в /usr/local/bin внутри образа
+cp "$ELEMENT_DIR/agent" "/usr/local/bin/agent"
+chmod +x "/usr/local/bin/agent"
+
+# Создаем systemd юнит для автозапуска АГЕНТА ВНУТРИ VM
+mkdir -p "/etc/systemd/system"
+
+cat <<EOF > "/etc/systemd/system/image-agent.service"
+[Unit]
+Description=Image Manager Test Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/agent
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Включаем сервис (делаем симлинк)
+# В chroot systemctl enable может не сработать, делаем руками
+ln -sf /etc/systemd/system/image-agent.service \
+   "/etc/systemd/system/multi-user.target.wants/image-agent.service"
+
+echo "Agent installed and enabled."

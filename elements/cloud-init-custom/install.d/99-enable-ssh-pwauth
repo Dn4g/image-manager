@@ -1,0 +1,35 @@
+#!/bin/bash
+set -euo pipefail
+echo "Configuring SSH Password Auth in Cloud-Init!"
+
+
+mkdir -p /etc/cloud/cloud.cfg.d
+
+cat <<EOF > /etc/cloud/cloud.cfg.d/99-custom-ssh.cfg
+#cloud-config
+ssh_pwauth: true
+EOF
+
+# 2. ПРЯМОЙ ПАТЧ SSHD_CONFIG - ssh_pwauth на девстаке не отрабатывала, пришлось говнить
+
+
+# Ищем PasswordAuthentication no и меняем на yes, или добавляем в конец
+SSHD_CONFIG="/etc/ssh/sshd_config"
+
+if [ -f "$SSHD_CONFIG" ]; then
+    # Если есть запрет - меняем на разрешение
+    sed -i 's/^#\?PasswordAuthentication\s\+no/PasswordAuthentication yes/g' "$SSHD_CONFIG"
+
+    # Если параметра нет вообще - добавляем
+    if ! grep -q "PasswordAuthentication yes" "$SSHD_CONFIG"; then
+        echo "PasswordAuthentication yes" >> "$SSHD_CONFIG"
+    fi
+
+    # Разрешаем root логин тоже (для тестов)
+    sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin yes/g' "$SSHD_CONFIG"
+    if ! grep -q "PermitRootLogin yes" "$SSHD_CONFIG"; then
+        echo "PermitRootLogin yes" >> "$SSHD_CONFIG"
+    fi
+fi
+
+echo "sshd config patched."

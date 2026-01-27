@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Manager Dashboard</title>
+    <style>
+        body { font-family: sans-serif; background: #222; color: #eee; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #4af; }
+
+        /* Форма запуска */
+        .card { background: #333; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        input, select, button { padding: 10px; margin-right: 10px; border: none; border-radius: 4px; }
+        input { background: #444; color: white; }
+        button { background: #4af; color: #111; cursor: pointer; font-weight: bold; }
+        button:hover { background: #6cf; }
+
+        /* Лог консоль */
+        #logs { background: #111; color: #0f0; padding: 10px; height: 150px; overflow-y: scroll; font-family: monospace; border-radius: 4px; margin-top: 20px;}
+        .log-entry { border-bottom: 1px solid #222; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚀 Image Manager</h1>
+
+    <div class="card">
+        <h3>Запустить сборку</h3>
+        <input type="text" id="imgName" placeholder="Имя образа (напр. test-v1)" value="test-image">
+        <select id="distro">
+            <option value="cirros">CirrOS (Быстро)</option>
+            <option value="ubuntu-minimal">Ubuntu Minimal</option>
+            <option value="debian">Debian</option>
+        </select>
+        <button onclick="startBuild()">🔥 Собрать</button>
+    </div>
+
+    <div class="card">
+        <h3>Лог событий (Frontend)</h3>
+        <div id="logs"></div>
+    </div>
+</div>
+
+<script>
+    const LOGS = document.getElementById('logs');
+
+    function log(msg) {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        LOGS.prepend(div);
+    }
+
+    async function startBuild() {
+        const name = document.getElementById('imgName').value;
+        const distro = document.getElementById('distro').value;
+
+        if (!name) return alert("Введи имя!");
+
+        log(`Отправляю запрос на сборку: ${name} (${distro})...`);
+
+        try {
+            const res = await fetch('/build', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image_name: name, distro: distro })
+            });
+
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(txt);
+            }
+
+            const data = await res.json();
+            log(`✅ Успех! ID сборки: ${data.build_id}. Статус: ${data.status}`);
+            log(`Теперь смотри логи на сервере (SSH), пока тут нет авто-обновления.`);
+
+        } catch (e) {
+            log(`❌ Ошибка: ${e.message}`);
+        }
+    }
+</script>
+
+</body>
+</html>

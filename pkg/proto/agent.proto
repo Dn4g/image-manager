@@ -1,0 +1,29 @@
+syntax = "proto3"; // Версия протокола. Сейчас стандарт - 3.
+
+package agent; // Пакет (namespace), чтобы имена не конфликтовали.
+
+// Опция для Go: куда класть сгенерированный код.
+// "pkg/pb" - папка, "agent" - имя Go-пакета.
+option go_package = "image-manager/pkg/pb";
+
+// Описание Сервиса. Это набор функций, которые можно вызывать удаленно.
+service AgentService {
+  // Метод ReportStatus.
+  // Агент вызывает его, чтобы сказать: "Я запустился, вот мои проверки".
+  rpc ReportStatus (StatusRequest) returns (StatusResponse);
+
+  // Можно добавить Ping, но ReportStatus пока хватит.
+}
+
+// Сообщение-запрос (от Агента к Менеджеру)
+message StatusRequest {
+  string vm_id = 1;        // ID виртуалки (чтобы Менеджер понял, кто звонит)
+  string phase = 2;        // Этап: "START", "TESTS_DONE"
+  bool success = 3;        // Все ли хорошо?
+  string details = 4;      // Логи или текст ошибки
+}
+
+// Сообщение-ответ (от Менеджера Агенту)
+message StatusResponse {
+  string command = 1; // Менеджер может сказать: "ОК, удаляйся" или "Жди"
+}
