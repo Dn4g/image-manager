@@ -88,6 +88,24 @@ func main() {
     r.Use(middleware.Logger)    // Логирует каждый запрос (метод, путь, время выполнения)
     r.Use(middleware.Recoverer) // Спасает сервер от падения (panic), если в хендлере произойдет ошибка в коде.
 
+    // Basic Auth Middleware
+    if cfg.HTTPServer.Username != "" && cfg.HTTPServer.Password != "" {
+        r.Use(func(next http.Handler) http.Handler {
+            return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+                user, pass, ok := r.BasicAuth()
+                if !ok || user != cfg.HTTPServer.Username || pass != cfg.HTTPServer.Password {
+                    w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+                    http.Error(w, "Unauthorized", http.StatusUnauthorized)
+                    return
+                }
+                next.ServeHTTP(w, r)
+            })
+        })
+        log.Info("basic auth enabled")
+    } else {
+        log.Warn("basic auth disabled (credentials empty)")
+    }
+
     // 6. Сборка всего вместе (Dependency Injection)
     // Создаем Handler и передаем ему все инструменты: логгер, билдер, базу, ос-клиент.
     h := handler.New(log, builder, store, osClient, cfg.OpenStack.FlavorID, cfg.OpenStack.NetworkID)

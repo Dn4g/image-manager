@@ -55,6 +55,40 @@ func NewClient(log *slog.Logger, authUrl, username, password, projectID, project
 	}, nil
 }
 
+// ImageInfo — упрощенная структура для фронтенда
+type ImageInfo struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Status    string `json:"status"`
+	Size      int64  `json:"size"`
+	CreatedAt string `json:"created_at"`
+}
+
+// ListImages возвращает список образов из Glance.
+func (c *Client) ListImages() ([]ImageInfo, error) {
+	allPages, err := images.List(c.imagesClient, images.ListOpts{}).AllPages()
+	if err != nil {
+		return nil, fmt.Errorf("failed to list images: %w", err)
+	}
+
+	allImages, err := images.ExtractImages(allPages)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract images: %w", err)
+	}
+
+	var result []ImageInfo
+	for _, img := range allImages {
+		result = append(result, ImageInfo{
+			ID:        img.ID,
+			Name:      img.Name,
+			Status:    string(img.Status),
+			Size:      img.SizeBytes,
+			CreatedAt: img.CreatedAt.Format("2006-01-02 15:04"),
+		})
+	}
+	return result, nil
+}
+
 // UploadImage загружает локальный файл в Glance.
 func (c *Client) UploadImage(filePath string, imageName string) (string, error) {
 	const op = "openstack.UploadImage"

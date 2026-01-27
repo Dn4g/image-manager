@@ -1,0 +1,39 @@
+# Configs & Secrets
+config.env
+.env
+*.env
+
+# Logs
+*.log
+app.log
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Binaries
+/bin/
+/image-manager
+/agent
+elements/agent-install/agent
+
+# Build Artifacts (Images)
+*.qcow2
+*.raw
+*.img
+*.iso
+
+# Disk Image Builder artifacts
+*.d/
+dib-manifest-*
+
+# IDE & System
+.idea/
+.vscode/
+.DS_Store
+
+# Haru specific (if needed)
+haru-mvp.json
+GEMINI.MD

@@ -46,6 +46,7 @@ func (s *Storage) Init() error {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         image_name TEXT NOT NULL,
         status TEXT NOT NULL,
+        vm_id TEXT,  -- Добавили колонку для связки VM и Сборки
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
     `
@@ -53,7 +54,61 @@ func (s *Storage) Init() error {
     if err != nil {
         return fmt.Errorf("storage.Init: %w", err)
     }
+
+    // ЛЕНИВАЯ МИГРАЦИЯ: Пытаемся добавить колонку, если её нет.
+    _, _ = s.db.Exec(`ALTER TABLE builds ADD COLUMN vm_id TEXT;`)
+    _, _ = s.db.Exec(`ALTER TABLE builds ADD COLUMN logs TEXT DEFAULT '';`)
+
     return nil
+}
+
+// ... (CreateBuild, SetVMID без изменений)
+
+// AppendLog добавляет строку в лог сборки
+func (s *Storage) AppendLog(id int64, text string) error {
+    query := `UPDATE builds SET logs = coalesce(logs, '') || ? || char(10) WHERE id = ?`
+    _, err := s.db.Exec(query, text, id)
+    return err
+}
+
+// GetBuilds возвращает список последних сборок (для истории).
+func (s *Storage) GetBuilds() ([]map[string]any, error) {
+    query := `SELECT id, image_name, status, created_at FROM builds ORDER BY id DESC LIMIT 50`
+    rows, err := s.db.Query(query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var result []map[string]any
+    for rows.Next() {
+        var id int64
+        var name, status, created string
+        if err := rows.Scan(&id, &name, &status, &created); err != nil {
+            continue
+        }
+        result = append(result, map[string]any{
+            "id":         id,
+            "image_name": name,
+            "status":     status,
+            "created_at": created,
+        })
+    }
+    return result, nil
+}
+
+// GetBuildStatus возвращает текущий статус сборки и логи.
+func (s *Storage) GetBuildStatus(id int64) (string, string, error) {
+    query := `SELECT status, coalesce(logs, '') FROM builds WHERE id = ?`
+    var status, logs string
+    err := s.db.QueryRow(query, id).Scan(&status, &logs)
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return "", "", fmt.Errorf("build not found")
+        }
+        return "", "", fmt.Errorf("storage.GetBuildStatus: %w", err)
+    }
+    return status, logs, nil
 }
 
 func (s *Storage) Close() error {
@@ -86,3 +141,26 @@ func (s *Storage) UpdateBuildStatus(id int64, status string) error {
 
     return nil
 }
+
+// SetVMID привязывает VM к сборке.
+func (s *Storage) SetVMID(id int64, vmID string) error {
+    query := `UPDATE builds SET vm_id = ? WHERE id = ?`
+    _, err := s.db.Exec(query, vmID, id)
+    return err
+}
+
+// UpdateBuildStatusByVMID обновляет статус сборки, зная ID виртуалки.
+func (s *Storage) UpdateBuildStatusByVMID(vmID string, status string) error {
+    query := `UPDATE builds SET status = ? WHERE vm_id = ?`
+    res, err := s.db.Exec(query, status, vmID)
+    if err != nil {
+        return err
+    }
+    
+    rows, _ := res.RowsAffected()
+    if rows == 0 {
+        return fmt.Errorf("no build found with vm_id=%s", vmID)
+    }
+    return nil
+}
+

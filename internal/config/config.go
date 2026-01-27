@@ -12,7 +12,9 @@ type Config struct {
     StoragePath string `yaml:"storage_path" env:"STORAGE_PATH" env-default:"./image-manager.db"`
     LogFilePath string `yaml:"log_file_path" env:"LOG_FILE_PATH" env-default:"app.log"`
     HTTPServer  struct {
-        Address string `yaml:"address" env:"HTTP_ADDRESS" env-default:"0.0.0.0:8080"`
+        Address  string `yaml:"address" env:"HTTP_ADDRESS" env-default:"0.0.0.0:8080"`
+        Username string `yaml:"username" env:"HTTP_USERNAME"`
+        Password string `yaml:"password" env:"HTTP_PASSWORD"`
     }
     GRPCServer struct {
 	Port string `yaml:"port" env:"GRPC_PORT" env-default:":50051"`

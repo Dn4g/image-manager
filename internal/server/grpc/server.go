@@ -66,6 +66,11 @@ func (s *AgentServer) ReportStatus(ctx context.Context, req *pb.StatusRequest) (
 
 	if req.Success {
 		s.log.Info("Test PASSED. Cleaning up VM...", slog.String("id", req.VmId))
+		
+		// ОБНОВЛЯЕМ СТАТУС В БАЗЕ
+		if err := s.store.UpdateBuildStatusByVMID(req.VmId, "SUCCESS"); err != nil {
+			s.log.Error("failed to update db status", slog.String("err", err.Error()))
+		}
 
 		// Удаляем VM через наш клиент
 		if err := s.osClient.DeleteVM(req.VmId); err != nil {
@@ -78,6 +83,10 @@ func (s *AgentServer) ReportStatus(ctx context.Context, req *pb.StatusRequest) (
 		command = "SHUTDOWN"
 	} else {
 		s.log.Warn("Test FAILED. Keeping VM for debug.", slog.String("details", req.Details))
+		
+		// ОБНОВЛЯЕМ СТАТУС НА ОШИБКУ
+		_ = s.store.UpdateBuildStatusByVMID(req.VmId, "ERROR_TEST")
+		
 		// Не удаляем VM, чтобы админ мог зайти и посмотреть.
 	}
 

@@ -17,8 +17,7 @@ EOF
 SSHD_CONFIG="/etc/ssh/sshd_config"
 
 if [ -f "$SSHD_CONFIG" ]; then
-    # Если есть запрет - меняем на разрешение
-    sed -i 's/^#\?PasswordAuthentication\s\+no/PasswordAuthentication yes/g' "$SSHD_CONFIG"
+.    sed -i 's/^#\?PasswordAuthentication\s\+no/PasswordAuthentication yes/g' "$SSHD_CONFIG"
 
     # Если параметра нет вообще - добавляем
     if ! grep -q "PasswordAuthentication yes" "$SSHD_CONFIG"; then
