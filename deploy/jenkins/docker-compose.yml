@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: jenkins
+    restart: unless-stopped
+    ports:
+      - "8081:8080"   # Web UI доступен на 8081 порту хоста
+      - "50000:50000" # Порт для подключения агентов
+    volumes:
+      - jenkins_home:/var/jenkins_home # Используем внешний том
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=true
+
+volumes:
+  jenkins_home:
+    external: true # Docker-compose ожидает, что volume 'jenkins_home' уже создан вручную (docker volume create jenkins_home)
