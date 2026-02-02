@@ -27,6 +27,7 @@ elements/agent-install/agent
 
 # Disk Image Builder artifacts
 *.d/
+!elements/**/install.d/
 dib-manifest-*
 
 # IDE & System

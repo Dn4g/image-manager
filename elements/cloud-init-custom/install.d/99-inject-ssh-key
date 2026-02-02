@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+if [ -z "${SSH_INJECT_KEY:-}" ]; then
+    echo "SSH_INJECT_KEY is not set. Skipping SSH key injection."
+    exit 0
+fi
+
+echo "Injecting operational SSH key for root..."
+
+# Создаем папку ssh для root
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+
+# Добавляем ключ (не перезаписываем, а добавляем)
+echo "$SSH_INJECT_KEY" >> /root/.ssh/authorized_keys
+
+# Права доступа (критично!)
+chmod 600 /root/.ssh/authorized_keys
+chown -R root:root /root/.ssh
+
+echo "SSH key injected successfully."

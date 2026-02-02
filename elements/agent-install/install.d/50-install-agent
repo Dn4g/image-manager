@@ -2,17 +2,39 @@
 set -euo pipefail
 
 # Ищем, где лежит наш элемент
-ELEMENT_DIR=$(dirname $(dirname $0))
+# $0 это путь к скрипту внутри tmp/hooks/install.d/..., нам нужно найти исходный agent
+# Но DIB копирует элемент целиком. В build-time элементы лежат в TMP_HOOKS_PATH.
+# Обычно бинарник, который мы положили в elements/agent-install/agent, будет доступен как:
+# $TMP_HOOKS_PATH/../../agent-install/agent (сложно угадать)
 
+# ПРОЩЕ: DIB копирует содержимое element-a в специальную папку.
+# Но в нашем Dockerfile мы копируем agent ВНУТРЬ elements/agent-install/agent ПЕРЕД сборкой.
 
+# В DIB переменная $ELEMENTS_PATH указывает на папки с элементами.
+# Но скрипт запускается уже внутри chroot.
+# Файлы элемента доступны через специальные переменные, но проще всего, если DIB их скопировал.
 
-echo "Installing Agent binary..."
+# В нашем случае мы полагаемся на то, что бинарник лежит рядом со скриптами в исходниках, 
+# и DIB скопировал их.
+# Обычно для копирования файлов используют element-copy. Но мы делаем cp вручную.
+# В DIB есть переменная $IMAGE_ELEMENT_DIR - путь к текущему элементу.
 
-# Копируем бинарник в /usr/local/bin внутри образа
-cp "$ELEMENT_DIR/agent" "/usr/local/bin/agent"
+if [ -z "${IMAGE_ELEMENT_DIR:-}" ]; then
+  # Fallback если DIB старый
+  IMAGE_ELEMENT_DIR=$(dirname $(dirname $0))
+fi
+
+echo "Installing Agent binary from $IMAGE_ELEMENT_DIR/agent..."
+
+if [ ! -f "$IMAGE_ELEMENT_DIR/agent" ]; then
+    echo "ERROR: Agent binary not found at $IMAGE_ELEMENT_DIR/agent"
+    exit 1
+fi
+
+cp "$IMAGE_ELEMENT_DIR/agent" "/usr/local/bin/agent"
 chmod +x "/usr/local/bin/agent"
 
-# Создаем systemd юнит для автозапуска АГЕНТА ВНУТРИ VM
+echo "Creating Systemd Unit..."
 mkdir -p "/etc/systemd/system"
 
 cat <<EOF > "/etc/systemd/system/image-agent.service"
@@ -22,6 +44,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+EnvironmentFile=-/etc/image-manager-agent.env
 ExecStart=/usr/local/bin/agent
 Restart=on-failure
 RestartSec=5
@@ -30,8 +53,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-# Включаем сервис (делаем симлинк)
-# В chroot systemctl enable может не сработать, делаем руками
+echo "Enabling service..."
 ln -sf /etc/systemd/system/image-agent.service \
    "/etc/systemd/system/multi-user.target.wants/image-agent.service"
 

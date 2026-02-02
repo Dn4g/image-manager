@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+
+if [ -n "${MANAGER_ADDRESS:-}" ]; then
+    echo "Setting up Agent configuration..."
+    echo "MANAGER_ADDRESS=$MANAGER_ADDRESS" > /etc/image-manager-agent.env
+    chmod 600 /etc/image-manager-agent.env
+else
+    echo "WARNING: MANAGER_ADDRESS variable was not provided during build."
+fi

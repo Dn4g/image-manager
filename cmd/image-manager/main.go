@@ -72,7 +72,7 @@ func main() {
 
      // 4. Инициализация Сервисов
     // Создаем "Сборщика" (Builder).
-    builder := service.NewBuilder(log)
+    builder := service.NewBuilder(log, cfg)
 
     go func() {
         agentSrv := grpcServer.NewAgentServer(log, store,osClient)

@@ -1,0 +1,10 @@
+# Gemini Ignore File
+# Unignore specific files blocked by .gitignore
+!config.env
+!app.log
+!*.db
+!elements/**/install.d/
+
+# Ignore heavy stuff
+.git/
+*.qcow2

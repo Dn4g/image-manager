@@ -17,7 +17,8 @@ type Config struct {
         Password string `yaml:"password" env:"HTTP_PASSWORD"`
     }
     GRPCServer struct {
-	Port string `yaml:"port" env:"GRPC_PORT" env-default:":50051"`
+	Port          string `yaml:"port" env:"GRPC_PORT" env-default:":50051"`
+	PublicAddress string `yaml:"public_address" env:"GRPC_PUBLIC_ADDRESS"` // IP:PORT, видимый для агентов
    }
 
 
@@ -30,8 +31,12 @@ type Config struct {
    DomainName string `yaml:"domain_name" env:"OS_DOMAIN_NAME" env-default:"Default"`
    Region     string `yaml:"region" env:"OS_REGION_NAME" env-default:"RegionOne"`
    SSHKeyName string `yaml:"ssh_key_name" env:"OS_SSH_KEY_NAME" env-default:"master-key"`
-   FlavorID   string `yaml:"flavor_id" env:"OS_FLAVOR_ID" env-default:"2"`
-   NetworkID  string `yaml:"network_id" env:"OS_NETWORK_ID" env-required:"true"`
+    // Instance Config
+    FlavorID   string `yaml:"flavor_id" env:"OS_FLAVOR_ID" env-default:"2"`
+    NetworkID  string `yaml:"network_id" env:"OS_NETWORK_ID" env-required:"true"`
+    
+    // Customization
+    SSHInjectKey string `yaml:"ssh_inject_key" env:"SSH_INJECT_KEY"`
     }
 
 }

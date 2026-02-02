@@ -5,11 +5,13 @@ services:
     image: jenkins/jenkins:lts-jdk17
     container_name: jenkins
     restart: unless-stopped
+    user: root # Срочно нужны права root для доступа к /var/run/docker.sock внутри контейнера
     ports:
       - "8081:8080"   # Web UI доступен на 8081 порту хоста
       - "50000:50000" # Порт для подключения агентов
     volumes:
       - jenkins_home:/var/jenkins_home # Используем внешний том
+      - /var/run/docker.sock:/var/run/docker.sock # Даем Jenkins доступ к Docker демону хоста
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=true
 

@@ -110,6 +110,9 @@
 
         th { background-color: #333; text-transform: uppercase; font-size: 0.85rem; color: var(--text-muted); }
         tr:hover { background-color: #2d2d2d; }
+        
+        /* Disabled rows */
+        tr.disabled-row { opacity: 0.5; }
 
         /* --- STATUS BADGES --- */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
@@ -228,175 +231,8 @@
                         <th>EOL</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- AlmaLinux 8 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#e0e0e0"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2-1-2-1-2 1 2 1zm0 2l-8-4v10l8 4 8-4V9l-8 4z"/></svg> 
-                                AlmaLinux 8
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-                    
-                    <!-- Debian 11 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#d70a53"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                                Debian 11
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Debian 12 (ACTIVE) -->
-                    <tr>
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#d70a53"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                                <strong>Debian 12</strong>
-                            </span>
-                        </td>
-                        <td><span class="badge badge-yes">Да</span></td>
-                        <!-- ДОБАВИЛИ ID для статуса -->
-                        <td><span id="status-deb12" class="badge badge-unk">Ожидание</span></td>
-                        <td><input type="text" value="--pkg vim,curl" style="width: 150px;"></td>
-                        <!-- Передаем ID статуса в функцию -->
-                        <td><button id="btn-build-deb12" class="btn-action" onclick="startBuild('Debian-12', 'debian', 'btn-build-deb12', 'status-deb12')">🚀 Собрать</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Debian 13 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                             <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#d70a53"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                                Debian 13 (Trixie)
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Rocky 9 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                             <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#10b981"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2-1-2-1-2 1 2 1zm0 2l-8-4v10l8 4 8-4V9l-8 4z"/></svg>
-                                Rocky Linux 9
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- SysRescueCD -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#2196f3"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm1-5c-2.5 0-4-1.5-4-3.5S10.5 4 13 4s4 1.5 4 3.5-2 3.5-3.5 3.5c-.5 0-1 .5-1 1V11h-2v-1c0-1.5 1.5-2 2-2z"/></svg>
-                                SysRescueCD
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Ubuntu 22 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#e95420"><circle cx="12" cy="12" r="10"/></svg>
-                                Ubuntu 22.04
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Ubuntu 24 (ACTIVE) -->
-                    <tr>
-                        <td>
-                             <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#e95420"><circle cx="12" cy="12" r="10"/></svg>
-                                <strong>Ubuntu 24.04</strong>
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <!-- ДОБАВИЛИ ID для статуса -->
-                        <td><span id="status-ubu24" class="badge badge-unk">Ожидание</span></td>
-                        <td><input type="text" value="--minimal" style="width: 150px;"></td>
-                        <!-- Передаем ID статуса в функцию -->
-                        <td><button id="btn-build-ubu24" class="btn-action" onclick="startBuild('Ubuntu-24', 'ubuntu', 'btn-build-ubu24', 'status-ubu24')">🚀 Собрать</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                     <!-- Windows 2016 -->
-                     <tr style="opacity: 0.6;">
-                        <td>
-                            <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#00a4ef"><path d="M3 12V6.5l8-1.1v6.6H3zm9 0v6.9l8 1.1V12h-8zm0-7.1l8-1.1V12h-8V4.9zm-9 7.6h8v6.4l-8-1.1V12.5z"/></svg>
-                                Windows Server 2016
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-no">Да</span></td>
-                    </tr>
-
-                    <!-- Windows 2019 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                             <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#00a4ef"><path d="M3 12V6.5l8-1.1v6.6H3zm9 0v6.9l8 1.1V12h-8zm0-7.1l8-1.1V12h-8V4.9zm-9 7.6h8v6.4l-8-1.1V12.5z"/></svg>
-                                Windows Server 2019
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
-
-                    <!-- Windows 2022 -->
-                    <tr style="opacity: 0.6;">
-                        <td>
-                             <span style="display:flex; align-items:center;">
-                                <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:#00a4ef"><path d="M3 12V6.5l8-1.1v6.6H3zm9 0v6.9l8 1.1V12h-8zm0-7.1l8-1.1V12h-8V4.9zm-9 7.6h8v6.4l-8-1.1V12.5z"/></svg>
-                                Windows Server 2022
-                            </span>
-                        </td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><span class="badge badge-no">Нет</span></td>
-                        <td><input type="text" value="" disabled></td>
-                        <td><button class="btn-action btn-disabled">🔒 Скоро</button></td>
-                        <td><span class="badge badge-yes">Нет</span></td>
-                    </tr>
+                <tbody id="images-table-body">
+                    <!-- Заполняется JS -->
                 </tbody>
             </table>
 
@@ -480,6 +316,31 @@
     </div>
 
     <script>
+        // --- CONFIGURATION ---
+        const distros = [
+            { id: 'alma8',  name: 'AlmaLinux 8',         type: 'alma',    color: '#e0e0e0', disabled: true,  args: '' },
+            { id: 'deb11',  name: 'Debian 11',           type: 'debian',  color: '#d70a53', disabled: true,  args: '' },
+            { id: 'deb12',  name: 'Debian 12',           type: 'debian',  color: '#d70a53', disabled: false, args: '--pkg vim,curl' },
+            { id: 'deb13',  name: 'Debian 13 (Trixie)',  type: 'debian',  color: '#d70a53', disabled: true,  args: '' },
+            { id: 'rocky9', name: 'Rocky Linux 9',       type: 'rocky',   color: '#10b981', disabled: true,  args: '' },
+            { id: 'sysres', name: 'SysRescueCD',         type: 'custom',  color: '#2196f3', disabled: true,  args: '' },
+            { id: 'ubu22',  name: 'Ubuntu 22.04',        type: 'ubuntu',  color: '#e95420', disabled: true,  args: '' },
+            { id: 'ubu24',  name: 'Ubuntu 24.04',        type: 'ubuntu',  color: '#e95420', disabled: false, args: '--minimal' },
+            { id: 'win16',  name: 'Windows Server 2016', type: 'windows', color: '#00a4ef', disabled: true,  args: '', eol: true },
+            { id: 'win19',  name: 'Windows Server 2019', type: 'windows', color: '#00a4ef', disabled: true,  args: '' },
+            { id: 'win22',  name: 'Windows Server 2022', type: 'windows', color: '#00a4ef', disabled: true,  args: '' },
+        ];
+
+        // --- ICONS (SVG Strings) ---
+        const icons = {
+            debian: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>',
+            ubuntu: '<circle cx="12" cy="12" r="10"/>',
+            windows: '<path d="M3 12V6.5l8-1.1v6.6H3zm9 0v6.9l8 1.1V12h-8zm0-7.1l8-1.1V12h-8V4.9zm-9 7.6h8v6.4l-8-1.1V12.5z"/>',
+            rocky: '<path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2-1-2-1-2 1 2 1zm0 2l-8-4v10l8 4 8-4V9l-8 4z"/>', // Generic cube
+            alma: '<path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2-1-2-1-2 1 2 1zm0 2l-8-4v10l8 4 8-4V9l-8 4z"/>',
+            custom: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm1-5c-2.5 0-4-1.5-4-3.5S10.5 4 13 4s4 1.5 4 3.5-2 3.5-3.5 3.5c-.5 0-1 .5-1 1V11h-2v-1c0-1.5 1.5-2 2-2z"/>'
+        };
+
         // --- TABS LOGIC ---
         function showTab(tabName) {
             document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
@@ -499,6 +360,123 @@
              }
         }
         
+        // --- RENDER TABLE ---
+        function renderImagesTable() {
+            const tbody = document.getElementById('images-table-body');
+            tbody.innerHTML = '';
+
+            distros.forEach(d => {
+                const tr = document.createElement('tr');
+                if (d.disabled) tr.className = 'disabled-row';
+                
+                // Icon selection
+                const iconPath = icons[d.type] || icons.custom;
+                const eolBadge = d.eol ? '<span class="badge badge-no">Да</span>' : '<span class="badge badge-yes">Нет</span>';
+                
+                // Unique IDs for dynamic updates
+                const idUploaded = `uploaded-${d.id}`;
+                const idTesting = `testing-${d.id}`; // Используем этот ID как единый статус
+                const idBtn = `btn-${d.id}`;
+
+                // Action Button
+                let actionBtn = '';
+                if (d.disabled) {
+                    actionBtn = '<button class="btn-action btn-disabled">🔒 Скоро</button>';
+                } else {
+                    // Используем imageName из конфига (мы его добавили ранее или добавим сейчас)
+                    // Если imageName нет, фоллбек на name.replace
+                    const safeName = d.imageName || d.name.replace(/\s+/g, '-');
+                    
+                    // ВАЖНО: Передаем idTesting как statusId
+                    actionBtn = `<button id="${idBtn}" class="btn-action" onclick="startBuild('${safeName}', '${d.type}', '${idBtn}', '${idTesting}')">🚀 Собрать</button>`;
+                }
+
+                tr.innerHTML = `
+                    <td>
+                        <span style="display:flex; align-items:center;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" style="margin-right:8px; fill:${d.color}">${iconPath}</svg> 
+                            ${d.disabled ? d.name : `<strong>${d.name}</strong>`}
+                        </span>
+                    </td>
+                    <td><span id="${idUploaded}" class="badge badge-no">Нет</span></td>
+                    <td><span id="${idTesting}" class="badge badge-unk">Нет</span></td>
+                    <td><input type="text" value="${d.args}" ${d.disabled ? 'disabled' : ''} style="width: 150px;"></td>
+                    <td>${actionBtn}</td>
+                    <td>${eolBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- DASHBOARD UPDATER ---
+        async function updateDashboard() {
+            // 1. Check Uploaded Images (Glance)
+            try {
+                const res = await fetch('/api/images');
+                if (res.ok) {
+                    const images = await res.json();
+                    distros.forEach(d => {
+                        const safeName = d.name.replace(/\s+/g, '-');
+                        const el = document.getElementById(`uploaded-${d.id}`);
+                        if (el) {
+                            // Ищем точное совпадение имени (или можно startsWith)
+                            // Glance возвращает {name: "Ubuntu-24-04", ...}
+                            // У нас safeName = "Ubuntu-24.04"
+                            // Лучше сделать гибкий поиск.
+                            const found = images.some(img => img.name === safeName || img.name.includes(safeName));
+                            
+                            if (found) {
+                                el.className = "badge badge-yes";
+                                el.innerText = "Да";
+                            } else {
+                                el.className = "badge badge-no";
+                                el.innerText = "Нет";
+                            }
+                        }
+                    });
+                }
+            } catch (e) { console.error("API Error (Images):", e); }
+
+            // 2. Check Testing Status (Last Build)
+            try {
+                const res = await fetch('/api/history');
+                if (res.ok) {
+                    const history = await res.json();
+                    // History отсортирована DESC (свежие сверху)
+                    
+                    distros.forEach(d => {
+                        const safeName = d.imageName || d.name.replace(/\s+/g, '-');
+                        const el = document.getElementById(`testing-${d.id}`);
+                        const btn = document.getElementById(`btn-${d.id}`);
+
+                        // Если кнопка заблокирована, значит идет активная сборка.
+                        // Не трогаем статус, чтобы не сбить поллер.
+                        if (btn && btn.disabled) return;
+                        
+                        // Ищем первую попавшуюся (самую свежую) сборку этого образа
+                        const lastBuild = history.find(b => b.image_name === safeName);
+                        
+                        if (el && lastBuild) {
+                            if (lastBuild.status === 'SUCCESS') {
+                                el.className = "badge badge-yes";
+                                el.innerText = "Успешно";
+                            } else if (lastBuild.status.startsWith('ERROR')) {
+                                el.className = "badge badge-no";
+                                el.innerText = "Ошибка";
+                            } else {
+                                // PENDING, BUILDING...
+                                el.className = "badge badge-unk";
+                                el.innerText = "В процессе";
+                            }
+                        } else if (el) {
+                            el.className = "badge badge-unk";
+                            el.innerText = "Нет данных";
+                        }
+                    });
+                }
+            } catch (e) { console.error("API Error (History):", e); }
+        }
+
         // --- LOGGER & PROGRESS ---
         const logContainer = document.getElementById('log-container');
         const logsDiv = document.getElementById('live-logs');
@@ -519,7 +497,6 @@
         }
 
         // --- BUILD LOGIC ---
-        // Добавили statusId
         async function startBuild(name, distro, btnId, statusId) {
             const btn = document.getElementById(btnId);
             
@@ -596,7 +573,6 @@
             let finished = false;
             let isError = false;
 
-            // Обновляем бейджик в таблице, если передан ID
             const badge = statusId ? document.getElementById(statusId) : null;
 
             switch (status) {
@@ -604,23 +580,22 @@
                     pct = 5; msg = "загрузка пакетов, около трех минут";
                     break;
                 case 'BUILDING':
-                    pct = 30; msg = "Сборка образа (disk-image-builder)...";
+                    pct = 30; msg = "Собираю образ, 5-7 минут";
                     break;
                 case 'UPLOADING':
-                    pct = 60; msg = "Загрузка в OpenStack Glance...";
+                    pct = 60; msg = "Заливаю в Openstask";
                     break;
                 case 'BOOTING_VM':
                     pct = 80; msg = "Создание тестовой VM...";
                     break;
                 case 'WAITING_AGENT':
-                    pct = 90; msg = "Ожидание отчета от Агента...";
+                    pct = 90; msg = "Жду сообшения от агента";
                     break;
                 case 'SUCCESS':
                     pct = 100; msg = "Сборка и тесты прошли успешно!";
                     finished = true;
                     progressBar.style.backgroundColor = "var(--success)";
                     
-                    // Обновляем бейдж на УСПЕХ
                     if (badge) {
                         badge.innerText = "Успешно";
                         badge.className = "badge badge-yes";
@@ -633,7 +608,6 @@
                         isError = true;
                         progressBar.style.backgroundColor = "var(--danger)";
                         
-                        // Обновляем бейдж на ОШИБКУ
                         if (badge) {
                             badge.innerText = "Ошибка";
                             badge.className = "badge badge-no";
@@ -655,6 +629,8 @@
                 btn.disabled = false;
                 btn.classList.remove('btn-disabled');
                 btn.innerText = isError ? "Ошибка (Повторить)" : "Готово (Еще раз)";
+                // Refresh dashboard immediately
+                updateDashboard();
             }
         }
 
@@ -763,6 +739,14 @@
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
         }
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderImagesTable();
+            updateDashboard();
+            setInterval(updateDashboard, 15000); // Auto-refresh every 15s
+        });
+
     </script>
 </body>
 </html>

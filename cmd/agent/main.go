@@ -5,7 +5,7 @@ import (
 	"encoding/json" // <-- Нужно для разбора JSON от OpenStack
 	"io"            // <-- Нужно для чтения ответа
 	"log"
-	"net/http"      // <-- Нужно для запроса к Metadata
+	"net/http" // <-- Нужно для запроса к Metadata
 	"os"
 	"os/exec"
 	"time"
@@ -16,23 +16,20 @@ import (
 	pb "image-manager/pkg/pb"
 )
 
-// IP менеджера. Замени на актуальный IP хоста, если он поменялся!
-const ManagerAddress = "82.146.46.155:50051"
-
 // getVMID стучится в OpenStack Metadata Service и узнает свой UUID.
 func getVMID() string {
 	// Адрес сервиса метаданных в OpenStack стандартный:
 	url := "http://169.254.169.254/openstack/latest/meta_data.json"
-	
+
 	// Делаем GET запрос с таймаутом (чтобы не висеть вечно)
 	client := http.Client{
 		Timeout: 2 * time.Second,
 	}
-	
+
 	resp, err := client.Get(url)
 	if err != nil {
 		log.Printf("Failed to get metadata from %s: %v", url, err)
-		return "unknown-id" // Если не удалось, вернем заглушку
+		return "unknown-id" // Если не ssудалось, вернем заглушку
 	}
 	defer resp.Body.Close()
 
@@ -47,7 +44,7 @@ func getVMID() string {
 	var meta struct {
 		UUID string `json:"uuid"`
 	}
-	
+
 	if err := json.Unmarshal(body, &meta); err != nil {
 		log.Printf("Failed to parse metadata JSON: %v. Body: %s", err, string(body))
 		return "unknown-id"
@@ -59,12 +56,19 @@ func getVMID() string {
 func main() {
 	log.Println("Agent started...")
 
+	managerAddress := os.Getenv("MANAGER_ADDRESS")
+	if managerAddress == "" {
+		// Fallback для локальной отладки, если забыли прокинуть
+		managerAddress = "127.0.0.1:50051"
+		log.Printf("MANAGER_ADDRESS not set, defaulting to %s", managerAddress)
+	}
+
 	// 1. Узнаем, кто мы (получаем ID)
 	vmID := getVMID()
 	log.Printf("Detected VM ID: %s", vmID)
 
 	// 2. Подключаемся к Менеджеру
-	conn, err := grpc.Dial(ManagerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(managerAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to manager: %v", err)
 	}
@@ -73,7 +77,7 @@ func main() {
 	client := pb.NewAgentServiceClient(conn)
 
 	// 3. Выполняем проверки (Smoke Tests)
-	
+
 	// Проверка Диска (Root mounted)
 	diskCheck := "OK"
 	if _, err := exec.Command("ls", "/").Output(); err != nil {
@@ -97,13 +101,13 @@ func main() {
 		Success: (netCheck == "OK" && diskCheck == "OK"),
 		Details: "Disk: " + diskCheck + "; Net: " + netCheck,
 	})
-	
+
 	if err != nil {
 		log.Fatalf("could not report status: %v", err)
 	}
 
 	log.Printf("Manager replied: %s", resp.Command)
-	
+
 	// 5. Самоуничтожение (если Менеджер дал добро)
 	if resp.Command == "OK" || resp.Command == "SHUTDOWN" {
 		log.Println("Mission complete. Self-destructing...")
@@ -112,12 +116,12 @@ func main() {
 		exec.Command("systemctl", "disable", "image-agent").Run()
 		os.Remove("/etc/systemd/system/image-agent.service")
 		os.Remove("/usr/local/bin/agent")
-		
+
 		// Останавливаемся
 		exec.Command("systemctl", "stop", "image-agent").Run()
 		os.Exit(0)
 	}
-	
+
 	// Если что-то пошло не так, висим 10 сек и выходим
 	time.Sleep(10 * time.Second)
 }

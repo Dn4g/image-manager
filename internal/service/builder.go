@@ -4,20 +4,23 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"io" // <-- Добавляем io
+	"image-manager/internal/config" // Добавляем импорт
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type Builder struct {
 	log *slog.Logger
+	cfg *config.Config // Добавляем конфиг
 }
 
-func NewBuilder(log *slog.Logger) *Builder {
-	return &Builder{log: log}
+func NewBuilder(log *slog.Logger, cfg *config.Config) *Builder {
+	return &Builder{log: log, cfg: cfg}
 }
 
 // ensureScriptsExecutable делает скрипты элементов исполняемыми.
@@ -127,6 +130,20 @@ func (b *Builder) BuildImage(imageName string, distro string, logWriter io.Write
 	
 	cmd.Env = append(cmd.Env, "ELEMENTS_PATH="+localElementsPath)
 	cmd.Env = append(cmd.Env, "DIB_CLOUD_INIT_DATASOURCES=OpenStack,ConfigDrive,None")
+	
+	// Передаем адрес менеджера в DIB.
+	// Элемент agent-install должен подхватить эту переменную и "запечь" её в образ.
+	if b.cfg.GRPCServer.PublicAddress != "" {
+		cmd.Env = append(cmd.Env, "MANAGER_ADDRESS="+b.cfg.GRPCServer.PublicAddress)
+	} else {
+		b.log.Warn("GRPC_PUBLIC_ADDRESS is empty! Agent might not connect back.")
+	}
+
+    // Передаем SSH ключ (если есть)
+    if b.cfg.OpenStack.SSHInjectKey != "" {
+        cmd.Env = append(cmd.Env, "SSH_INJECT_KEY="+b.cfg.OpenStack.SSHInjectKey)
+    }
+
 	cmd.Env = append(cmd.Env, extraEnv...)
 
 	stdout, _ := cmd.StdoutPipe()
@@ -136,32 +153,37 @@ func (b *Builder) BuildImage(imageName string, distro string, logWriter io.Write
 		return fmt.Errorf("%s: failed to start command: %w", op, err)
 	}
 
-	// Канал для сбора ошибок из stderr (последние N строк)
-	errLogChan := make(chan []string, 1)
+	// Канал для сбора всех логов (Stdout + Stderr) чтобы показать последние строки при ошибке
+	logChan := make(chan string, 100)
+	// Буфер для последних N строк
+	logBufferChan := make(chan []string, 1)
 
-	// Логи в фоне (Stderr)
+	// Goroutine-сборщик логов в буфер
 	go func() {
-		scanner := bufio.NewScanner(stderr)
 		var buffer []string
-		const maxLines = 20
+		const maxLines = 50 // Увеличим буфер
 
-		for scanner.Scan() {
-			line := scanner.Text()
-			b.log.Debug("[DIB]", slog.String("msg", line))
-			
-			// Пишем в БД (если врайтер передан)
-			if logWriter != nil {
-				// Добавляем префикс ERR для красоты, или просто пишем как есть
-				logWriter.Write([]byte(line)) 
-			}
-
-			// Сохраняем в буфер
+		for line := range logChan {
 			buffer = append(buffer, line)
 			if len(buffer) > maxLines {
 				buffer = buffer[1:]
 			}
 		}
-		errLogChan <- buffer
+		logBufferChan <- buffer
+	}()
+
+	// Логи в фоне (Stderr)
+	go func() {
+		scanner := bufio.NewScanner(stderr)
+		for scanner.Scan() {
+			line := scanner.Text()
+			b.log.Debug("[DIB-ERR]", slog.String("msg", line))
+			
+			if logWriter != nil {
+				logWriter.Write([]byte(line + "\n")) 
+			}
+			logChan <- fmt.Sprintf("[STDERR] %s", line)
+		}
 	}()
 
 	// Логи в фоне (Stdout)
@@ -169,20 +191,35 @@ func (b *Builder) BuildImage(imageName string, distro string, logWriter io.Write
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
-			b.log.Info("[DIB]", slog.String("msg", line))
+			b.log.Info("[DIB-OUT]", slog.String("msg", line))
             
-            // Пишем в БД
 			if logWriter != nil {
-				logWriter.Write([]byte(line))
+				// Улучшение UX: перехватываем важное сообщение о конвертации
+				if strings.Contains(line, "Converting image") {
+					logWriter.Write([]byte("\n>>> [STATUS] Build logic finished. Converting raw image to QCOW2 (Final Step)...\n\n"))
+				}
+				logWriter.Write([]byte(line + "\n"))
 			}
+			logChan <- fmt.Sprintf("[STDOUT] %s", line)
 		}
 	}()
 
 	// Ждем завершения
-	if err := cmd.Wait(); err != nil {
-		// Достаем последние логи ошибок
-		lastLogs := <-errLogChan
-		
+	err := cmd.Wait()
+	
+	// Закрываем канал, чтобы сборщик завершил работу и отдал буфер
+	// (Важно: cmd.Wait() гарантирует, что пайпы закрыты и сканеры дочитали)
+	// Но нам нужно убедиться, что горутины сканеров закончили писать в logChan.
+	// Проще всего: дать небольшую паузу или использовать WaitGroup, но для простоты:
+	// Сканеры выходят когда пайпы закрываются (при смерти процесса).
+	
+	// Небольшой хак: даем время сканерам докинуть остатки
+	time.Sleep(100 * time.Millisecond)
+	close(logChan)
+	
+	lastLogs := <-logBufferChan
+
+	if err != nil {
 		errMsg := fmt.Sprintf("build failed: %v. Last logs:\n", err)
 		for _, l := range lastLogs {
 			errMsg += fmt.Sprintf("  > %s\n", l)

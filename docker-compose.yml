@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  image-manager:
+    build: .
+    container_name: image-manager
+    restart: unless-stopped
+    # !!! КРИТИЧНО !!!
+    # Приложению нужны права на создание loop-устройств (/dev/loop*) и монтирование файловых систем.
+    # Без privileged: true сборка образов (disk-image-builder) работать НЕ БУДЕТ.
+    privileged: true
+    ports:
+      - "8080:8080"
+      - "50051:50051" # gRPC порт для агентов
+    volumes:
+      # Прокидываем конфиг (создай его из example!)
+      - ./config.env:/app/config.env
+      # Персистентное хранилище для SQLite базы (если она лежит в корне, лучше перенастроить путь в конфиге)
+      # Пока предполагаем, что база создается в рабочей директории
+      - image_manager_data:/app/data
+      # На всякий случай прокидываем /dev, хотя privileged должно хватить
+      - /dev:/dev
+    environment:
+      - HTTP_PORT=8080
+      # Указываем приложению искать базу данных в volume
+      # (Убедись, что твой код поддерживает настройку пути к БД через ENV или флаги, иначе поправь код!)
+
+volumes:
+  image_manager_data:
