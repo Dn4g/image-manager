@@ -84,6 +84,13 @@ func main() {
 		diskCheck = "FAIL: " + err.Error()
 	}
 
+	// TODO: Добавить проверку размера диска (Disk Resize check).
+	// Цель: Убедиться, что cloud-init (growpart) отработал и корневой раздел расширился до размера флейвора.
+	// Логика:
+	// 1. Выполнить `df -BG /`
+	// 2. Проверить, что Size > 10G (или соответствует ожиданиям flavor m1.small).
+	// 3. Если меньше (например 2G), значит ресайз не сработал -> FAIL.
+
 	// Проверка Сети (Ping Google)
 	netCheck := "OK"
 	if err := exec.Command("ping", "-c", "1", "8.8.8.8").Run(); err != nil {

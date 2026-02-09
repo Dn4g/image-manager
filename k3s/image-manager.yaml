@@ -1,0 +1,156 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: im-db-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: im-config
+  namespace: default
+data:
+  # OpenStack Credentials
+  OS_AUTH_URL: "http://185.60.132.90/identity"
+  OS_USERNAME: "admin"
+  OS_PROJECT_NAME: "admin"
+  OS_PROJECT_DOMAIN_NAME: "Default"
+  OS_USER_DOMAIN_NAME: "Default"
+  OS_REGION_NAME: "RegionOne"
+  OS_SSH_KEY_NAME: "master-key"
+  OS_FLAVOR_ID: "2"
+  OS_NETWORK_ID: "47a414d9-6db9-4694-b976-d41b1c48a46e"
+  
+  # App Config
+  ENV: "prod"
+  HTTP_ADDRESS: "0.0.0.0:8080"
+  HTTP_USERNAME: "admin"
+  GRPC_PORT: ":50051"
+  # Публичный адрес для агентов (Внешний IP сервера)
+  GRPC_PUBLIC_ADDRESS: "grpc.dn4g.ru:80"
+  STORAGE_PATH: "/app/data/image-manager.db"
+  
+  # SSH Key Injection
+  SSH_INJECT_KEY: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICB2ZU++TieuDfmD2+yzgLWp0TMlkvdbO2f4AS2F3V9W root@support.little.helper"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: im-secrets
+  namespace: default
+type: Opaque
+stringData:
+  # Secrets
+  OS_PASSWORD: "ea3d0795e86484c0737d"
+  HTTP_PASSWORD: "secret"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-manager
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-manager
+  template:
+    metadata:
+      labels:
+        app: image-manager
+    spec:
+      containers:
+      - name: image-manager
+        image: registry.dn4g.ru/image-manager:v1
+        imagePullPolicy: Always
+        securityContext:
+          privileged: true # ВАЖНО для loop devices
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 50051
+          name: grpc
+        envFrom:
+        - configMapRef:
+            name: im-config
+        - secretRef:
+            name: im-secrets
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: dev
+          mountPath: /dev # DIB нужен доступ к /dev
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: im-db-pvc
+      - name: dev
+        hostPath:
+          path: /dev
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-manager
+  namespace: default
+spec:
+  selector:
+    app: image-manager
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+  - name: grpc
+    port: 50051
+    targetPort: 50051
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: image-manager
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - host: image-manager.dn4g.ru
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: image-manager
+            port:
+              name: http
+
+---
+# INGRESS 2: gRPC
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+   name: image-manager-grpc
+   namespace: default
+   annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC" # ВАЖНО!
+spec:
+  rules:
+  - host: grpc.dn4g.ru
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: image-manager
+            port:
+              name: grpc

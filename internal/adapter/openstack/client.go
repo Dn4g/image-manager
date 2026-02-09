@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
@@ -163,6 +164,21 @@ func (c *Client) CreateVM(name, imageID, flavorID, netID, userData string) (stri
 	return server.ID, nil
 }
 
+// WaitForVMActive ждет, пока VM перейдет в статус ACTIVE.
+func (c *Client) WaitForVMActive(serverID string, timeout time.Duration) error {
+	op := "openstack.WaitForVMActive"
+	c.log.Info("waiting for vm to become active", slog.String("id", serverID))
+
+	// Инициализация compute client (лучше вынести, но пока так)
+	computeClient, err := openstack.NewComputeV2(c.imagesClient.ProviderClient, gophercloud.EndpointOpts{
+		Region: c.region,
+	})
+	if err != nil {
+		return fmt.Errorf("%s: compute client error: %w", op, err)
+	}
+
+	return servers.WaitForStatus(computeClient, serverID, "ACTIVE", int(timeout.Seconds()))
+}
 
 func (c *Client) DeleteVM(serverID string) error {
         const op = "openstack.DeleteVM"

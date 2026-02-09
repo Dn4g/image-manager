@@ -1,53 +1,55 @@
 pipeline {
-    agent {
-        docker { 
-            image 'golang:1.23'
-            // Кешируем модули Go, чтобы не качать их каждый раз
-            args '-v go-pkg-mod:/go/pkg/mod'
+  agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          labels:
+            some-label: some-label-value
+        spec:
+          containers:
+          - name: kaniko
+            image: gcr.io/kaniko-project/executor:debug
+            command:
+            - /busybox/cat
+            tty: true
+            volumeMounts:
+              - name: registry-cert
+                mountPath: /etc/ssl/certs/ca-certificates.crt
+                subPath: ca-certificates.crt
+          - name: kubectl
+            image: bitnami/kubectl:latest
+            command:
+            - cat
+            tty: true
+          volumes:
+            - name: registry-cert
+              hostPath:
+                path: /etc/ssl/certs/ca-certificates.crt
+      '''
+    }
+  }
+  stages {
+    stage('Build with Kaniko') {
+      steps {
+        container('kaniko') {
+          // Kaniko не использует Dockerfile из корня контекста по умолчанию, если он не там.
+          // Используем внутреннее имя сервиса Registry: docker-registry.default.svc.cluster.local:5000
+          // Это работает стабильнее внутри кластера.
+          
+          sh '/kaniko/executor --context `pwd` --destination docker-registry.default.svc.cluster.local:5000/image-manager:latest --insecure --skip-tls-verify'
         }
+      }
     }
     
-    environment {
-        // Отключаем CGO для переносимости, если это возможно
-        CGO_ENABLED = '0'
+    stage('Deploy to K8s') {
+      steps {
+        container('kubectl') {
+          // Обновляем Deployment, чтобы он подтянул новый образ (imagePullPolicy: Always)
+          sh 'kubectl rollout restart deployment/image-manager -n default'
+        }
+      }
     }
-
-    stages {
-        stage('Check Env') {
-            steps {
-                sh 'go version'
-                sh 'ls -la'
-            }
-        }
-
-        stage('Build Agent') {
-            steps {
-                echo 'Building Agent binary...'
-                // Агент собираем строго под Linux AMD64
-                sh 'GOOS=linux GOARCH=amd64 go build -o elements/agent-install/agent cmd/agent/main.go'
-            }
-        }
-
-        stage('Build Server') {
-            steps {
-                echo 'Building Image Manager Server...'
-                sh 'go build -o image-manager cmd/image-manager/main.go'
-            }
-        }
-    }
-
-    post {
-        always {
-            // Очистка, если нужно
-            cleanWs()
-        }
-        success {
-            // Сохраняем собранные файлы как артефакты сборки
-            archiveArtifacts artifacts: 'elements/agent-install/agent, image-manager', fingerprint: true
-            echo 'Build success! Artifacts archived.'
-        }
-        failure {
-            echo 'Build failed. Fix it!'
-        }
-    }
+  }
 }

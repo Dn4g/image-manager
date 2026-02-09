@@ -199,10 +199,22 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 		}
 		
 		_ = h.store.SetVMID(id, vmID)
-		_ = h.store.AppendLog(id, fmt.Sprintf("VM created. ID: %s. Waiting for agent report...", vmID))
+		_ = h.store.AppendLog(id, fmt.Sprintf("VM created. ID: %s. Waiting for ACTIVE status...", vmID))
+
+		// Ждем, пока VM станет ACTIVE
+		if err := h.osClient.WaitForVMActive(vmID, 5*time.Minute); err != nil {
+			h.log.Error("background: vm failed to become active", slog.String("error", err.Error()))
+			_ = h.store.UpdateBuildStatus(id, "ERROR_VM_BOOT")
+			_ = h.store.AppendLog(id, fmt.Sprintf("VM boot failed (not active): %s", err.Error()))
+			// Пытаемся удалить сломанную VM
+			_ = h.osClient.DeleteVM(vmID)
+			return
+		}
+
+		_ = h.store.AppendLog(id, "VM is ACTIVE. Waiting for agent report...")
 
 		// ШАГ Г: Ожидание агента
-		h.log.Info("background: vm created, waiting for agent...", slog.String("vm_id", vmID))
+		h.log.Info("background: vm active, waiting for agent...", slog.String("vm_id", vmID))
 		_ = h.store.UpdateBuildStatus(id, "WAITING_AGENT")
 
 		// WATCHDOG (8 min)
