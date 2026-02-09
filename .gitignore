@@ -19,6 +19,9 @@ app.log
 /agent
 elements/agent-install/agent
 
+#K3S
+k3s/
+
 # Build Artifacts (Images)
 *.qcow2
 *.raw
