@@ -20,7 +20,7 @@ app.log
 elements/agent-install/agent
 
 #K3S
-k3s/
+k3s
 
 # Build Artifacts (Images)
 *.qcow2
