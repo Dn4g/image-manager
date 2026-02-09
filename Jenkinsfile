@@ -15,7 +15,7 @@ pipeline {
             - /busybox/cat
             tty: true
           - name: kubectl
-            image: bitnami/kubectl:latest
+            image: dtzar/helm-kubectl
             command:
             - cat
             tty: true
