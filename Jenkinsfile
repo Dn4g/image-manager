@@ -14,19 +14,11 @@ pipeline {
             command:
             - /busybox/cat
             tty: true
-            volumeMounts:
-              - name: registry-cert
-                mountPath: /etc/ssl/certs/ca-certificates.crt
-                subPath: ca-certificates.crt
           - name: kubectl
             image: bitnami/kubectl:latest
             command:
             - cat
             tty: true
-          volumes:
-            - name: registry-cert
-              hostPath:
-                path: /etc/ssl/certs/ca-certificates.crt
       '''
     }
   }
