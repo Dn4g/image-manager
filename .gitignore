@@ -13,14 +13,14 @@ app.log
 *.db-wal
 *.sqlite
 
+# K3S
+k3s
+
 # Binaries
 /bin/
 /image-manager
 /agent
 elements/agent-install/agent
-
-#K3S
-k3s
 
 # Build Artifacts (Images)
 *.qcow2
