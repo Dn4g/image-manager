@@ -317,18 +317,20 @@
 
     <script>
         // --- CONFIGURATION ---
+        // type: теперь это имя файла конфига на бэкенде (без .yaml)
+        // iconType: ключ для иконки
         const distros = [
-            { id: 'alma8',  name: 'AlmaLinux 8',         type: 'alma',    color: '#e0e0e0', disabled: true,  args: '' },
-            { id: 'deb11',  name: 'Debian 11',           type: 'debian',  color: '#d70a53', disabled: true,  args: '' },
-            { id: 'deb12',  name: 'Debian 12',           type: 'debian',  color: '#d70a53', disabled: false, args: '--pkg vim,curl' },
-            { id: 'deb13',  name: 'Debian 13 (Trixie)',  type: 'debian',  color: '#d70a53', disabled: true,  args: '' },
-            { id: 'rocky9', name: 'Rocky Linux 9',       type: 'rocky',   color: '#10b981', disabled: true,  args: '' },
-            { id: 'sysres', name: 'SysRescueCD',         type: 'custom',  color: '#2196f3', disabled: true,  args: '' },
-            { id: 'ubu22',  name: 'Ubuntu 22.04',        type: 'ubuntu',  color: '#e95420', disabled: true,  args: '' },
-            { id: 'ubu24',  name: 'Ubuntu 24.04',        type: 'ubuntu',  color: '#e95420', disabled: false, args: '--minimal' },
-            { id: 'win16',  name: 'Windows Server 2016', type: 'windows', color: '#00a4ef', disabled: true,  args: '', eol: true },
-            { id: 'win19',  name: 'Windows Server 2019', type: 'windows', color: '#00a4ef', disabled: true,  args: '' },
-            { id: 'win22',  name: 'Windows Server 2022', type: 'windows', color: '#00a4ef', disabled: true,  args: '' },
+            { id: 'alma8',  name: 'AlmaLinux 8',         imageName: 'AlmaLinux-8', type: 'alma-8',    iconType: 'alma',    color: '#e0e0e0', disabled: true,  args: '' },
+            { id: 'deb11',  name: 'Debian 11',           imageName: 'Debian-11',   type: 'debian-11', iconType: 'debian',  color: '#d70a53', disabled: true,  args: '' },
+            { id: 'deb12',  name: 'Debian 12',           imageName: 'Debian-12',   type: 'debian-12', iconType: 'debian',  color: '#d70a53', disabled: false, args: '--pkg vim,curl' },
+            { id: 'deb13',  name: 'Debian 13 (Trixie)',  imageName: 'Debian-13',   type: 'debian-13', iconType: 'debian',  color: '#d70a53', disabled: true,  args: '' },
+            { id: 'rocky9', name: 'Rocky Linux 9',       imageName: 'Rocky-9',     type: 'rocky-9',   iconType: 'rocky',   color: '#10b981', disabled: true,  args: '' },
+            { id: 'sysres', name: 'SysRescueCD',         imageName: 'SysRescue',   type: 'sysrescue', iconType: 'custom',  color: '#2196f3', disabled: true,  args: '' },
+            { id: 'ubu22',  name: 'Ubuntu 22.04',        imageName: 'Ubuntu-22',   type: 'ubuntu-22', iconType: 'ubuntu',  color: '#e95420', disabled: true,  args: '' },
+            { id: 'ubu24',  name: 'Ubuntu 24.04',        imageName: 'Ubuntu-24',   type: 'ubuntu-24', iconType: 'ubuntu',  color: '#e95420', disabled: false, args: '--minimal' },
+            { id: 'win16',  name: 'Windows Server 2016', imageName: 'Windows-2016',type: 'win-2016',  iconType: 'windows', color: '#00a4ef', disabled: true,  args: '', eol: true },
+            { id: 'win19',  name: 'Windows Server 2019', imageName: 'Windows-2019',type: 'win-2019',  iconType: 'windows', color: '#00a4ef', disabled: true,  args: '' },
+            { id: 'win22',  name: 'Windows Server 2022', imageName: 'Windows-2022',type: 'win-2022',  iconType: 'windows', color: '#00a4ef', disabled: true,  args: '' },
         ];
 
         // --- ICONS (SVG Strings) ---
@@ -370,7 +372,7 @@
                 if (d.disabled) tr.className = 'disabled-row';
                 
                 // Icon selection
-                const iconPath = icons[d.type] || icons.custom;
+                const iconPath = icons[d.iconType] || icons.custom;
                 const eolBadge = d.eol ? '<span class="badge badge-no">Да</span>' : '<span class="badge badge-yes">Нет</span>';
                 
                 // Unique IDs for dynamic updates
@@ -416,7 +418,7 @@
                 if (res.ok) {
                     const images = await res.json();
                     distros.forEach(d => {
-                        const safeName = d.name.replace(/\s+/g, '-');
+                        const safeName = d.imageName || d.name.replace(/\s+/g, '-');
                         const el = document.getElementById(`uploaded-${d.id}`);
                         if (el) {
                             // Ищем точное совпадение имени (или можно startsWith)
@@ -580,22 +582,22 @@
                     pct = 5; msg = "загрузка пакетов, около трех минут";
                     break;
                 case 'BUILDING':
-                    pct = 30; msg = "Собираю образ, 5-7 минут";
+                    pct = 30; msg = "Сборка образа (disk-image-builder)...";
                     break;
                 case 'UPLOADING':
-                    pct = 60; msg = "Заливаю в Openstask";
+                    pct = 60; msg = "Загрузка в OpenStack Glance...";
                     break;
                 case 'BOOTING_VM':
                     pct = 80; msg = "Создание тестовой VM...";
                     break;
                 case 'WAITING_AGENT':
-                    pct = 90; msg = "Жду сообшения от агента";
+                    pct = 90; msg = "Ожидание отчета от Агента...";
                     break;
                 case 'SUCCESS':
                     pct = 100; msg = "Сборка и тесты прошли успешно!";
                     finished = true;
                     progressBar.style.backgroundColor = "var(--success)";
-
+                    
                     if (badge) {
                         badge.innerText = "Успешно";
                         badge.className = "badge badge-yes";

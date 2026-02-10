@@ -76,42 +76,33 @@ func (b *Builder) BuildImage(imageName string, distro string, logWriter io.Write
 		slog.String("distro", distro),
 		slog.String("timeout", "10m"),
 	)
-    // ... (переменные elements/env) ...
     
+    // --- ЗАГРУЗКА КОНФИГА ОС ---
+    // Хак совместимости для старого фронтенда
+    configName := distro
+    if distro == "debian" { configName = "debian-12" }
+    if distro == "ubuntu" { configName = "ubuntu-24" }
+
+    distroCfg, err := config.LoadDistroConfig(configName)
+    if err != nil {
+        return fmt.Errorf("%s: unknown distro '%s' (config load failed): %w", op, distro, err)
+    }
+
 	var elements []string
 	var extraEnv []string
 
-	// БАЗОВЫЕ ЭЛЕМЕНТЫ (Общие для всех, но лучше контролировать явно)
-	commonElements := []string{
-		"vm",
-		"simple-init",
-		"cloud-init",
-		"cloud-init-custom", // Наши настройки SSH (PasswordAuth)
-		"openssh-server",    // SSH сервер
-		"enable-serial-console",
-		"block-device-efi",
-		"bootloader",
-		"journal-to-console",
-		"dhcp-all-interfaces",
-		"agent-install", // Наш агент
-	}
+    // Добавляем OS элемент (debian, ubuntu)
+    if distroCfg.OSElement != "" {
+        elements = append(elements, distroCfg.OSElement)
+    }
+    
+    // Добавляем остальные элементы из конфига
+    elements = append(elements, distroCfg.Elements...)
 
-	switch distro {
-	case "debian":
-		// === КОНФИГУРАЦИЯ DEBIAN ===
-		elements = append([]string{"debian"}, commonElements...)
-		elements = append(elements, "cloud-init-datasources", "package-installs", "sysprep")
-		extraEnv = append(extraEnv, "DIB_RELEASE=bookworm")
-
-	case "ubuntu":
-		// === КОНФИГУРАЦИЯ UBUNTU ===
-		elements = append([]string{"ubuntu"}, commonElements...)
-		elements = append(elements, "cloud-init-datasources", "package-installs", "sysprep")
-		extraEnv = append(extraEnv, "DIB_RELEASE=noble")
-
-	default:
-		return fmt.Errorf("%s: unsupported distro: %s", op, distro)
-	}
+    // Добавляем ENV из конфига
+    for k, v := range distroCfg.Env {
+        extraEnv = append(extraEnv, fmt.Sprintf("%s=%s", k, v))
+    }
 
 	// Формируем итоговые аргументы для disk-image-create
 	args := elements
