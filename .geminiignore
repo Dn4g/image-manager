@@ -4,7 +4,11 @@
 !app.log
 !*.db
 !elements/**/install.d/
+!k3s
+!web
 
+!k3s/image-manager.yaml
+# 3. Вывод метрик для контроля ситуации
 # Ignore heavy stuff
 .git/
 *.qcow2

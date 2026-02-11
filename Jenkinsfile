@@ -30,7 +30,7 @@ pipeline {
           // Используем внутреннее имя сервиса Registry: docker-registry.default.svc.cluster.local:5000
           // Это работает стабильнее внутри кластера.
           
-          sh '/kaniko/executor --context `pwd` --destination docker-registry.default.svc.cluster.local:5000/image-manager:latest --insecure --skip-tls-verify'
+          sh '/kaniko/executor --context `pwd` --destination docker-registry.default.svc.cluster.local:5000/image-manager:latest --cache=true --cache-repo=docker-registry.default.svc.cluster.local:5000/image-manager-cache --insecure --skip-tls-verify'
         }
       }
     }
@@ -38,7 +38,9 @@ pipeline {
     stage('Deploy to K8s') {
       steps {
         container('kubectl') {
-          // Обновляем Deployment, чтобы он подтянул новый образ (imagePullPolicy: Always)
+          // Принудительно обновляем образ на тот, что мы только что собрали во внутреннем реестре
+          sh 'kubectl set image deployment/image-manager image-manager=docker-registry.default.svc.cluster.local:5000/image-manager:latest -n default'
+          // Перезапускаем, чтобы подтянуть изменения (особенно если тег latest не менялся, но хеш изменился)
           sh 'kubectl rollout restart deployment/image-manager -n default'
         }
       }
