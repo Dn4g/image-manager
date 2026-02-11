@@ -168,6 +168,11 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 		
 		h.log.Info("background: starting upload", slog.String("file", targetFilename))
 
+		// Очищаем старых кандидатов перед загрузкой нового
+		if err := h.osClient.DeleteImageByName(candidateName); err != nil {
+			h.log.Warn("failed to delete old candidate (ignoring)", slog.String("err", err.Error()))
+		}
+
 		glanceID, err := h.osClient.UploadImage(targetFilename, candidateName)
 		if err != nil {
 			h.log.Error("background: upload failed", slog.String("error", err.Error()))
@@ -215,10 +220,18 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 		h.log.Info("background: vm active, waiting for agent...", slog.String("vm_id", vmID))
 		_ = h.store.UpdateBuildStatus(id, "WAITING_AGENT")
 
-		// WATCHDOG (8 min)
+		// WATCHDOG (8 min total)
 		go func(bid int64, vid string) {
-			time.Sleep(8 * time.Minute)
+            // Intermediate check (3 min)
+            time.Sleep(3 * time.Minute)
 			status, _, _ := h.store.GetBuildStatus(bid)
+            if status == "WAITING_AGENT" {
+                _ = h.store.AppendLog(bid, "WARNING: Agent is silent for 3 minutes. Check server logs. Will terminate in 5 minutes.")
+            }
+
+            // Final check (remaining 5 min)
+			time.Sleep(5 * time.Minute)
+			status, _, _ = h.store.GetBuildStatus(bid)
 			if status == "WAITING_AGENT" {
 				h.log.Warn("WATCHDOG: Timeout reached", slog.Int64("id", bid))
 				_ = h.store.UpdateBuildStatus(bid, "ERROR_TIMEOUT")
