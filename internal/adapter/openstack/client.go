@@ -229,17 +229,17 @@ func (c *Client) DeleteImageByName(name string) error {
     	// Игнорируем ошибку, если образа нет
     	_ = c.DeleteImageByName(targetName)
     
-    	// 2. Переименовываем кандидата
-    	// Используем PATCH запрос (JSON Patch)
-    	updateOpts := images.UpdateOpts{
-    		images.ReplaceOp{
-    			Path:  "/name",
-    			Value: targetName,
-    		},
-    	}
-    
-    	_, err := images.Update(c.imagesClient, candidateID, updateOpts).Extract()
-    	if err != nil {
+    		// 2. Переименовываем кандидата
+    		// Используем PATCH запрос (JSON Patch)
+    		updateOpts := images.UpdateOpts{
+    			{
+    				Op:    images.ReplaceOp,
+    				Path:  "/name",
+    				Value: targetName,
+    			},
+    		}
+    	
+    		_, err := images.Update(c.imagesClient, candidateID, updateOpts).Extract()    	if err != nil {
     		return fmt.Errorf("%s: rename failed: %w", op, err)
     	}
     
