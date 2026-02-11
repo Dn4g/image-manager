@@ -33,8 +33,8 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
 Локальный реестр для образов.
 
 1.  Применить манифест `k3s/registry.yaml` (Deployment + PVC + Ingress).
-2.  Настроить Docker и K3s на использование insecure registry `registry.dn4g.ru` (см. `/etc/docker/daemon.json` и `/etc/rancher/k3s/registries.yaml`).
-3.  Добавить домен в `/etc/hosts`.
+2.  Настроить Docker и K3s на использование insecure registry `registry.example.com` (см. `/etc/docker/daemon.json` и `/etc/rancher/k3s/registries.yaml`).
+3.  Добавить домен в `/etc/hosts`: `<SERVER_IP> registry.example.com`.
 
 ### Jenkins
 Устанавливается через Helm.
@@ -44,18 +44,18 @@ helm install jenkins jenkins/jenkins \
   --namespace jenkins \
   --create-namespace \
   --set controller.ingress.enabled=true \
-  --set controller.ingress.hostName=jenkins.test.com \
+  --set controller.ingress.hostName=jenkins.example.com \
   --set controller.ingress.ingressClassName=nginx \
   --set controller.serviceType=ClusterIP
 ```
 Важно: Настроить "Jenkins Tunnel" в конфиге облака на `jenkins-agent.jenkins.svc.cluster.local:50000`.
 
 ### RabbitMQ
-Устанавливается через Helm (Bitnami legacy) или манифест.
+Устанавливается через Helm (Bitnami) или манифест.
 
 ## 4. Деплой приложения
 
-1.  Создать секреты в K8s (или отредактировать `k3s/image-manager.yaml`, но не коммитить секреты!).
+1.  Создать секреты в K8s.
 2.  Применить манифест:
     ```bash
     kubectl apply -f k3s/image-manager.yaml
@@ -65,6 +65,6 @@ helm install jenkins jenkins/jenkins \
     kubectl rollout restart deployment image-manager
     ```
 
-Доступ к вебу: `http://image-manager.yourdomain.ru`
-Доступ для агентов (gRPC): `http://grpc.yourdomain.ru` (порт 80)
+Доступ к вебу: `http://image-manager.example.com`
+Доступ для агентов (gRPC): `http://grpc.example.com` (порт 80)
 

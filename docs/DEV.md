@@ -38,5 +38,5 @@
 При пуше в ветку `main`:
 1.  Jenkins запускает под с Kaniko.
 2.  Собирается Docker-образ `image-manager`.
-3.  Образ пушится в локальный Registry (`registry.dn4g.ru`).
+3.  Образ пушится в локальный Registry (`registry.example.com`).
 4.  Выполняется `kubectl rollout restart`, обновляя приложение в кластере.

@@ -34,7 +34,7 @@
 Проект разворачивается в Kubernetes.
 Используется K3s, Nginx Ingress, локальный Docker Registry.
 
-Подробная инструкция по настройке сервера и кластера: [docs/DEPLOY_K8S.md](docs/DEPLOY_K8S.md).
+Подробная инструкция: [docs/DEPLOY_K8S.md](docs/DEPLOY_K8S.md).
 
 ## Структура репозитория
 
