@@ -52,6 +52,9 @@ COPY --from=builder /src/elements /app/elements
 # Копируем веб-интерфейс
 COPY --from=builder /src/web /app/web
 
+# Копируем конфиги дистрибутивов
+COPY --from=builder /src/configs /app/configs
+
 # Создаем папку для логов и базы данных
 RUN mkdir -p /app/data
 
