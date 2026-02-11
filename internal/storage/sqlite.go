@@ -47,6 +47,7 @@ func (s *Storage) Init() error {
         image_name TEXT NOT NULL,
         status TEXT NOT NULL,
         vm_id TEXT,  -- Добавили колонку для связки VM и Сборки
+        glance_id TEXT, -- ID образа в OpenStack
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         logs TEXT DEFAULT ''
     );
@@ -55,11 +56,39 @@ func (s *Storage) Init() error {
 	if err != nil {
 		return fmt.Errorf("storage.Init: %w", err)
 	}
+    
+    // Миграция для старых баз (игнорируем ошибку, если колонка есть)
+    _, _ = s.db.Exec(`ALTER TABLE builds ADD COLUMN glance_id TEXT;`)
 
 	return nil
 }
 
 // ... (CreateBuild, SetVMID без изменений)
+
+// SetGlanceID сохраняет ID загруженного образа.
+func (s *Storage) SetGlanceID(id int64, glanceID string) error {
+	query := `UPDATE builds SET glance_id = ? WHERE id = ?`
+	_, err := s.db.Exec(query, glanceID, id)
+	return err
+}
+
+// BuildInfo структура для возврата данных
+type BuildInfo struct {
+    ID        int64
+    ImageName string
+    GlanceID  string
+}
+
+// GetBuildInfoByVMID возвращает данные о сборке по ID виртуалки.
+func (s *Storage) GetBuildInfoByVMID(vmID string) (*BuildInfo, error) {
+    query := `SELECT id, image_name, coalesce(glance_id, '') FROM builds WHERE vm_id = ?`
+    var b BuildInfo
+    err := s.db.QueryRow(query, vmID).Scan(&b.ID, &b.ImageName, &b.GlanceID)
+    if err != nil {
+        return nil, err
+    }
+    return &b, nil
+}
 
 // AppendLog добавляет строку в лог сборки
 func (s *Storage) AppendLog(id int64, text string) error {

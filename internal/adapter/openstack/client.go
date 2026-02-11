@@ -210,12 +210,39 @@ func (c *Client) DeleteImageByName(name string) error {
         return err
     }
 
-    for _, img := range allImages {
-        c.log.Info("deleting old image", slog.String("id", img.ID), slog.String("name", name))
-        if err := images.Delete(c.imagesClient, img.ID).ExtractErr(); err != nil {
-            c.log.Error("failed to delete old image", slog.String("err", err.Error()))
-        }
+    	for _, img := range allImages {
+    		c.log.Info("deleting old image", slog.String("id", img.ID), slog.String("name", name))
+    		if err := images.Delete(c.imagesClient, img.ID).ExtractErr(); err != nil {
+    			c.log.Error("failed to delete old image", slog.String("err", err.Error()))
+    		}
+    	}
+    	return nil
     }
-    return nil
-}
-
+    
+    // PromoteImage заменяет старый образ новым (кандидатом).
+    // 1. Удаляет старый образ (targetName).
+    // 2. Переименовывает candidateID -> targetName.
+    func (c *Client) PromoteImage(candidateID, targetName string) error {
+    	const op = "openstack.PromoteImage"
+    	
+    	// 1. Удаляем старый (боевой)
+    	// Игнорируем ошибку, если образа нет
+    	_ = c.DeleteImageByName(targetName)
+    
+    	// 2. Переименовываем кандидата
+    	// Используем PATCH запрос (JSON Patch)
+    	updateOpts := images.UpdateOpts{
+    		images.ReplaceOp{
+    			Path:  "/name",
+    			Value: targetName,
+    		},
+    	}
+    
+    	_, err := images.Update(c.imagesClient, candidateID, updateOpts).Extract()
+    	if err != nil {
+    		return fmt.Errorf("%s: rename failed: %w", op, err)
+    	}
+    
+    	c.log.Info("image promoted successfully", slog.String("id", candidateID), slog.String("new_name", targetName))
+    	return nil
+    }

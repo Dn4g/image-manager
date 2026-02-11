@@ -65,7 +65,22 @@ func (s *AgentServer) ReportStatus(ctx context.Context, req *pb.StatusRequest) (
 	command := "WAIT"
 
 	if req.Success {
-		s.log.Info("Test PASSED. Cleaning up VM...", slog.String("id", req.VmId))
+		s.log.Info("Test PASSED. Promoting image...", slog.String("id", req.VmId))
+		
+		// 1. PROMOTE IMAGE
+		// Получаем данные о билде, чтобы знать ID кандидата и целевое имя
+		buildInfo, err := s.store.GetBuildInfoByVMID(req.VmId)
+		if err != nil {
+			s.log.Error("failed to get build info for promotion", slog.String("err", err.Error()))
+		} else {
+			// Подменяем образ
+			if err := s.osClient.PromoteImage(buildInfo.GlanceID, buildInfo.ImageName); err != nil {
+				s.log.Error("CRITICAL: PROMOTION FAILED", slog.String("err", err.Error()))
+				// TODO: Возможно, стоит пометить статус как ERROR_PROMOTE?
+			} else {
+				s.log.Info("Image promoted to production", slog.String("name", buildInfo.ImageName))
+			}
+		}
 		
 		// ОБНОВЛЯЕМ СТАТУС В БАЗЕ
 		if err := s.store.UpdateBuildStatusByVMID(req.VmId, "SUCCESS"); err != nil {

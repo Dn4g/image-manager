@@ -162,26 +162,24 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 
 		// ШАГ Б: Загрузка
 		_ = h.store.UpdateBuildStatus(id, "UPLOADING")
-		_ = h.store.AppendLog(id, "Uploading to OpenStack Glance...")
+		_ = h.store.AppendLog(id, "Uploading to OpenStack Glance (Candidate)...")
 		
-		h.log.Info("background: checking for old images", slog.String("name", req.ImageName))
-		if err := h.osClient.DeleteImageByName(req.ImageName); err != nil {
-			h.log.Warn("background: failed to delete old image (ignoring)", slog.String("error", err.Error()))
-			_ = h.store.AppendLog(id, "Warning: Failed to delete old image (ignoring)")
-		}
-
+		candidateName := req.ImageName + "-candidate"
+		
 		h.log.Info("background: starting upload", slog.String("file", targetFilename))
 
-		glanceID, err := h.osClient.UploadImage(targetFilename, req.ImageName)
+		glanceID, err := h.osClient.UploadImage(targetFilename, candidateName)
 		if err != nil {
 			h.log.Error("background: upload failed", slog.String("error", err.Error()))
 			_ = h.store.UpdateBuildStatus(id, "ERROR_UPLOAD")
 			_ = h.store.AppendLog(id, fmt.Sprintf("Upload failed: %s", err.Error()))
 			return
 		}
+		
+		_ = h.store.SetGlanceID(id, glanceID)
 
 		h.log.Info("background: image uploaded", slog.String("glance_id", glanceID))
-		_ = h.store.AppendLog(id, fmt.Sprintf("Image uploaded. ID: %s", glanceID))
+		_ = h.store.AppendLog(id, fmt.Sprintf("Candidate uploaded. ID: %s", glanceID))
 
 		// ШАГ В: Создание VM
 		_ = h.store.UpdateBuildStatus(id, "BOOTING_VM")
