@@ -231,7 +231,8 @@ func (c *Client) PromoteImage(candidateID, targetName string) error {
 	// 2. Переименовываем кандидата
 	// Используем PATCH запрос (JSON Patch)
 	updateOpts := images.UpdateOpts{
-		images.ReplaceOp{
+		images.Patch{
+			Op:    images.ReplaceOp,
 			Path:  "/name",
 			Value: targetName,
 		},
