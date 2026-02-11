@@ -230,13 +230,11 @@ func (c *Client) PromoteImage(candidateID, targetName string) error {
 
 	// 2. Переименовываем кандидата
 	// Используем PATCH запрос (JSON Patch)
-	updateOpts := images.UpdateOpts{
-		{
-			Op:    images.ReplaceOp,
-			Path:  "/name",
-			Value: targetName,
-		},
-	}
+	// Инициализируем слайс вручную, чтобы избежать проблем с типами
+	updateOpts := make(images.UpdateOpts, 1)
+	updateOpts[0].Op = images.ReplaceOp
+	updateOpts[0].Path = "/name"
+	updateOpts[0].Value = targetName
 
 	_, err := images.Update(c.imagesClient, candidateID, updateOpts).Extract()
 	if err != nil {
