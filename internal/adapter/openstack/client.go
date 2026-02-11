@@ -218,6 +218,17 @@ func (c *Client) DeleteImageByName(name string) error {
 	return nil
 }
 
+// imageUpdateOpts - костыль для обхода проблем с типами Gophercloud
+type imageUpdateOpts []map[string]interface{}
+
+func (opts imageUpdateOpts) ToImageUpdateMap() ([]interface{}, error) {
+	res := make([]interface{}, len(opts))
+	for i, patch := range opts {
+		res[i] = patch
+	}
+	return res, nil
+}
+
 // PromoteImage заменяет старый образ новым (кандидатом).
 // 1. Удаляет старый образ (targetName).
 // 2. Переименовывает candidateID -> targetName.
@@ -229,12 +240,12 @@ func (c *Client) PromoteImage(candidateID, targetName string) error {
 	_ = c.DeleteImageByName(targetName)
 
 	// 2. Переименовываем кандидата
-	// Используем PATCH запрос (JSON Patch)
-	updateOpts := images.UpdateOpts{
-		images.Patch{
-			Op:    images.ReplaceOp,
-			Path:  "/name",
-			Value: targetName,
+	// Используем свой тип, чтобы не гадать с версиями библиотеки
+	updateOpts := imageUpdateOpts{
+		{
+			"op":    "replace",
+			"path":  "/name",
+			"value": targetName,
 		},
 	}
 
