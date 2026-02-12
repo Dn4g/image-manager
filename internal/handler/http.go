@@ -220,22 +220,26 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 		h.log.Info("background: vm active, waiting for agent...", slog.String("vm_id", vmID))
 		_ = h.store.UpdateBuildStatus(id, "WAITING_AGENT")
 
-		// WATCHDOG (8 min total)
+		// WATCHDOG (10 min total: 3 warning + 7 kill)
 		go func(bid int64, vid string) {
-            // Intermediate check (3 min)
+            // 1. Wait 3 minutes for initial check
             time.Sleep(3 * time.Minute)
 			status, _, _ := h.store.GetBuildStatus(bid)
             if status == "WAITING_AGENT" {
-                _ = h.store.AppendLog(bid, "WARNING: Agent is silent for 3 minutes. Check server logs. Will terminate in 5 minutes.")
+                // Change status to ERROR_TIMEOUT so UI shows red, but keep VM alive
+                _ = h.store.UpdateBuildStatus(bid, "ERROR_TIMEOUT")
+                _ = h.store.AppendLog(bid, "TIMEOUT: Agent did not report in 3 minutes. Please start agent manually: /usr/local/bin/agent. VM will be terminated in 7 minutes.")
             }
 
-            // Final check (remaining 5 min)
-			time.Sleep(5 * time.Minute)
+            // 2. Wait remaining 7 minutes before killing
+			time.Sleep(7 * time.Minute)
 			status, _, _ = h.store.GetBuildStatus(bid)
-			if status == "WAITING_AGENT" {
-				h.log.Warn("WATCHDOG: Timeout reached", slog.Int64("id", bid))
-				_ = h.store.UpdateBuildStatus(bid, "ERROR_TIMEOUT")
-				_ = h.store.AppendLog(bid, "TIMEOUT: Agent did not report in 8 minutes. Terminating.")
+            // Kill if it's still in error state or waiting (meaning no success report came in)
+			if status == "WAITING_AGENT" || status == "ERROR_TIMEOUT" {
+				h.log.Warn("WATCHDOG: Final timeout reached", slog.Int64("id", bid))
+                // Ensure status is error
+				_ = h.store.UpdateBuildStatus(bid, "ERROR_TIMEOUT") 
+				_ = h.store.AppendLog(bid, "FINAL TIMEOUT: Terminating VM.")
 				_ = h.osClient.DeleteVM(vid)
 			}
 		}(id, vmID)

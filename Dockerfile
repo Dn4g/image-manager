@@ -12,7 +12,8 @@ COPY . .
 
 # 1. Собираем Агента (он должен лежать в elements/agent-install/agent)
 # Важно: собираем его именно по тому пути, откуда его потом заберет финальный образ
-RUN GOOS=linux GOARCH=amd64 go build -o elements/agent-install/agent cmd/agent/main.go
+# CGO_ENABLED=0 делает бинарник статическим (без зависимостей от GLIBC)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o elements/agent-install/agent cmd/agent/main.go
 
 # 2. Собираем Основной Сервер
 RUN go build -o image-manager cmd/image-manager/main.go

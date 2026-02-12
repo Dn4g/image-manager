@@ -85,7 +85,7 @@ func main() {
     r := chi.NewRouter()
 
     // Middleware — это функции, которые выполняются для каждого запроса ДО хендлера.
-    r.Use(middleware.Logger)    // Логирует каждый запрос (метод, путь, время выполнения)
+    // r.Use(middleware.Logger)    // Логирует каждый запрос (метод, путь, время выполнения) - DISABLED TO REDUCE NOISE
     r.Use(middleware.Recoverer) // Спасает сервер от падения (panic), если в хендлере произойдет ошибка в коде.
 
     // Basic Auth Middleware

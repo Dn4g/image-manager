@@ -603,6 +603,16 @@
                         badge.className = "badge badge-yes";
                     }
                     break;
+                case 'ERROR_TIMEOUT':
+                     pct = 100; msg = "Агент не ответил. Запустите вручную: /usr/local/bin/agent (Удаление через 7 мин)";
+                     finished = true; // Stop polling? Or keep polling to see success? Let's stop for now as UI button resets.
+                     isError = true;
+                     progressBar.style.backgroundColor = "var(--danger)";
+                     if (badge) {
+                            badge.innerText = "Timeout";
+                            badge.className = "badge badge-no";
+                     }
+                     break;
                 default:
                     if (status.startsWith("ERROR")) {
                         pct = 100; msg = `Ошибка: ${status}`;
