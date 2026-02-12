@@ -122,7 +122,7 @@ func (c *Client) UploadImage(filePath string, imageName string) (string, error) 
 
 	res := imagedata.Upload(c.imagesClient, img.ID, f)
 	if res.Err != nil {
-		return "", fmt.Errorf("%s: upload data failed: %w", res.Err)
+		return "", fmt.Errorf("%s: upload data failed: %w", op, res.Err)
 	}
 
 	c.log.Info("image uploaded successfully", slog.String("id", img.ID))
