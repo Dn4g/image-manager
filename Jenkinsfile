@@ -30,7 +30,7 @@ pipeline {
           // Используем внутреннее имя сервиса Registry: docker-registry.default.svc.cluster.local:5000
           // Это работает стабильнее внутри кластера.
           
-          sh '/kaniko/executor --context `pwd` --destination 10.43.250.43:5000/image-manager:latest --cache=true --cache-repo=10.43.250.43:5000/image-manager-cache --insecure --skip-tls-verify'
+          sh '/kaniko/executor --context `pwd` --destination 10.43.250.43:5000/image-manager:latest --cache=false --cache-repo=10.43.250.43:5000/image-manager-cache --insecure --skip-tls-verify'
         }
       }
     }
