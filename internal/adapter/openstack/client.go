@@ -210,7 +210,7 @@ func (c *Client) DeleteImageByName(name string) error {
 	}
 
 	for _, img := range allImages {
-		c.log.Info("deleting old image", slog.String("id", img.ID), slog.String("name", name))
+		c.log.Info("deleting old image", slog.String("id", img.ID), slog.String("name", name), slog.String("status", string(img.Status)))
 		if err := images.Delete(c.imagesClient, img.ID).ExtractErr(); err != nil {
 			c.log.Error("failed to delete old image", slog.String("err", err.Error()))
 		}
