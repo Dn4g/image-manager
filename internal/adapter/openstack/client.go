@@ -114,19 +114,55 @@ func (c *Client) UploadImage(filePath string, imageName string) (string, error) 
 	}
 	c.log.Debug("image metadata created", slog.String("id", img.ID))
 
+	// Если что-то пойдёт не так после создания метаданных — подчищаем за собой
+	cleanup := func() {
+		c.log.Warn("cleaning up orphaned image", slog.String("id", img.ID))
+		if delErr := images.Delete(c.imagesClient, img.ID).ExtractErr(); delErr != nil {
+			c.log.Error("failed to cleanup orphaned image", slog.String("id", img.ID), slog.String("err", delErr.Error()))
+		}
+	}
+
 	f, err := os.Open(filePath)
 	if err != nil {
+		cleanup()
 		return "", fmt.Errorf("%s: open file failed: %w", op, err)
 	}
 	defer f.Close()
 
 	res := imagedata.Upload(c.imagesClient, img.ID, f)
 	if res.Err != nil {
+		cleanup()
 		return "", fmt.Errorf("%s: upload data failed: %w", op, res.Err)
+	}
+
+	// Ждём, пока Glance переведёт образ в active
+	if err := c.waitForImageActive(img.ID, 5*time.Minute); err != nil {
+		cleanup()
+		return "", fmt.Errorf("%s: image did not become active: %w", op, err)
 	}
 
 	c.log.Info("image uploaded successfully", slog.String("id", img.ID))
 	return img.ID, nil
+}
+
+// waitForImageActive опрашивает Glance, пока образ не станет active.
+func (c *Client) waitForImageActive(imageID string, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		img, err := images.Get(c.imagesClient, imageID).Extract()
+		if err != nil {
+			return fmt.Errorf("get image status: %w", err)
+		}
+		switch img.Status {
+		case images.ImageStatusActive:
+			return nil
+		case images.ImageStatusKilled, images.ImageStatusDeleted:
+			return fmt.Errorf("image entered terminal status: %s", img.Status)
+		}
+		c.log.Debug("waiting for image active", slog.String("id", imageID), slog.String("status", string(img.Status)))
+		time.Sleep(5 * time.Second)
+	}
+	return fmt.Errorf("timed out after %s", timeout)
 }
 
 // CreateVM создает сервер в OpenStack.
