@@ -1,0 +1,20 @@
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    qemu-utils \
+    kpartx \
+    git \
+    sudo \
+    curl \
+    ca-certificates \
+    procps \
+    squashfs-tools \
+    dosfstools \
+    gdisk \
+    debootstrap \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip3 install diskimage-builder --break-system-packages

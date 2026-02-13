@@ -30,11 +30,29 @@ pipeline {
   }
 
   stages {
-    stage('Build with Kaniko') {
+    stage('Build Base Image') {
+      when {
+        changeset 'Dockerfile.base'
+      }
       steps {
         container('kaniko') {
           sh """/kaniko/executor \
             --context `pwd` \
+            --dockerfile Dockerfile.base \
+            --destination ${REGISTRY}/image-manager-base:latest \
+            --insecure \
+            --skip-tls-verify"""
+        }
+      }
+    }
+
+    stage('Build App') {
+      steps {
+        container('kaniko') {
+          sh """/kaniko/executor \
+            --context `pwd` \
+            --cache=true \
+            --cache-repo=${REGISTRY}/${IMAGE}-cache \
             --destination ${REGISTRY}/${IMAGE}:${TAG} \
             --destination ${REGISTRY}/${IMAGE}:latest \
             --insecure \
