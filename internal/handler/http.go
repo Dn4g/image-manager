@@ -173,11 +173,20 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 			h.log.Warn("failed to delete old candidate (ignoring)", slog.String("err", err.Error()))
 		}
 
+		// Удаляем все зависшие образы с candidate в имени и статусом queued
+		if err := h.osClient.CleanupQueuedCandidates(); err != nil {
+			h.log.Warn("failed to cleanup queued candidates (ignoring)", slog.String("err", err.Error()))
+		}
+
 		glanceID, err := h.osClient.UploadImage(targetFilename, candidateName)
 		if err != nil {
 			h.log.Error("background: upload failed", slog.String("error", err.Error()))
 			_ = h.store.UpdateBuildStatus(id, "ERROR_UPLOAD")
 			_ = h.store.AppendLog(id, fmt.Sprintf("Upload failed: %s", err.Error()))
+			// После ошибки загрузки чистим зависшие queued-кандидаты
+			if cleanErr := h.osClient.CleanupQueuedCandidates(); cleanErr != nil {
+				h.log.Warn("post-failure cleanup failed", slog.String("err", cleanErr.Error()))
+			}
 			return
 		}
 		

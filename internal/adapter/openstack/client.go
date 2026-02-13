@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gophercloud/gophercloud"
@@ -249,6 +250,37 @@ func (c *Client) DeleteImageByName(name string) error {
 		c.log.Info("deleting old image", slog.String("id", img.ID), slog.String("name", name), slog.String("status", string(img.Status)))
 		if err := images.Delete(c.imagesClient, img.ID).ExtractErr(); err != nil {
 			c.log.Error("failed to delete old image", slog.String("err", err.Error()))
+		}
+	}
+	return nil
+}
+
+// CleanupQueuedCandidates удаляет все образы со словом "candidate" в имени и статусом "queued".
+func (c *Client) CleanupQueuedCandidates() error {
+	pages, err := images.List(c.imagesClient, images.ListOpts{
+		Status: images.ImageStatusQueued,
+	}).AllPages()
+	if err != nil {
+		return fmt.Errorf("list queued images: %w", err)
+	}
+
+	allImages, err := images.ExtractImages(pages)
+	if err != nil {
+		return fmt.Errorf("extract queued images: %w", err)
+	}
+
+	for _, img := range allImages {
+		if strings.Contains(img.Name, "candidate") {
+			c.log.Warn("deleting queued candidate image",
+				slog.String("id", img.ID),
+				slog.String("name", img.Name),
+			)
+			if err := images.Delete(c.imagesClient, img.ID).ExtractErr(); err != nil {
+				c.log.Error("failed to delete queued candidate",
+					slog.String("id", img.ID),
+					slog.String("err", err.Error()),
+				)
+			}
 		}
 	}
 	return nil
