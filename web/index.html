@@ -466,7 +466,7 @@
                                 el.className = "badge badge-no";
                                 el.innerText = "Ошибка";
                             } else {
-                                // PENDING, BUILDING...
+                                // PENDING, BUILDING, BUILD_*, UPLOADING...
                                 el.className = "badge badge-unk";
                                 el.innerText = "В процессе";
                             }
@@ -579,10 +579,31 @@
 
             switch (status) {
                 case 'PENDING':
-                    pct = 5; msg = "загрузка пакетов, около трех минут";
+                    pct = 5; msg = "Подготовка к сборке...";
                     break;
                 case 'BUILDING':
-                    pct = 30; msg = "Сборка образа (disk-image-builder)...";
+                    pct = 10; msg = "Запуск disk-image-builder...";
+                    break;
+                case 'BUILD_EXTRA_DATA':
+                    pct = 15; msg = "DIB: загрузка внешних данных (extra-data.d)";
+                    break;
+                case 'BUILD_PRE_INSTALL':
+                    pct = 20; msg = "DIB: подготовка к установке (pre-install.d)";
+                    break;
+                case 'BUILD_INSTALL':
+                    pct = 30; msg = "DIB: установка пакетов (install.d)";
+                    break;
+                case 'BUILD_POST_INSTALL':
+                    pct = 38; msg = "DIB: пост-установка (post-install.d)";
+                    break;
+                case 'BUILD_FINALISE':
+                    pct = 42; msg = "DIB: финализация образа (finalise.d)";
+                    break;
+                case 'BUILD_CLEANUP':
+                    pct = 48; msg = "DIB: очистка (cleanup.d)";
+                    break;
+                case 'BUILD_CONVERT':
+                    pct = 52; msg = "DIB: конвертация в QCOW2...";
                     break;
                 case 'UPLOADING':
                     pct = 60; msg = "Загрузка в OpenStack Glance...";

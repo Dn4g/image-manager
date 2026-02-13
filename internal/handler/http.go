@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -46,6 +47,52 @@ type DBLogWriter struct {
 func (w *DBLogWriter) Write(p []byte) (n int, err error) {
 	err = w.store.AppendLog(w.id, string(p))
 	return len(p), err
+}
+
+// PhaseDetectWriter wraps DBLogWriter and detects DIB build phases from output,
+// updating the build status in the database accordingly.
+type PhaseDetectWriter struct {
+	inner        *DBLogWriter
+	store        *storage.Storage
+	id           int64
+	currentPhase string
+}
+
+func NewPhaseDetectWriter(store *storage.Storage, id int64) *PhaseDetectWriter {
+	return &PhaseDetectWriter{
+		inner: &DBLogWriter{store: store, id: id},
+		store: store,
+		id:    id,
+	}
+}
+
+func (w *PhaseDetectWriter) Write(p []byte) (n int, err error) {
+	line := string(p)
+
+	var newPhase string
+	switch {
+	case strings.Contains(line, "extra-data.d"):
+		newPhase = "BUILD_EXTRA_DATA"
+	case strings.Contains(line, "pre-install.d"):
+		newPhase = "BUILD_PRE_INSTALL"
+	case strings.Contains(line, "install.d"):
+		newPhase = "BUILD_INSTALL"
+	case strings.Contains(line, "post-install.d"):
+		newPhase = "BUILD_POST_INSTALL"
+	case strings.Contains(line, "finalise.d"):
+		newPhase = "BUILD_FINALISE"
+	case strings.Contains(line, "cleanup.d"):
+		newPhase = "BUILD_CLEANUP"
+	case strings.Contains(line, "Converting image"):
+		newPhase = "BUILD_CONVERT"
+	}
+
+	if newPhase != "" && newPhase != w.currentPhase {
+		w.currentPhase = newPhase
+		_ = w.store.UpdateBuildStatus(w.id, newPhase)
+	}
+
+	return w.inner.Write(p)
 }
 
 // RegisterRoutes настраивает маршруты
@@ -146,7 +193,7 @@ func (h *Handler) StartBuild(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 
-		logWriter := &DBLogWriter{store: h.store, id: id}
+		logWriter := NewPhaseDetectWriter(h.store, id)
 
 		// ШАГ А: Сборка
 		_ = h.store.UpdateBuildStatus(id, "BUILDING")
